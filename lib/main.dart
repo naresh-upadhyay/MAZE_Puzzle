@@ -11,7 +11,6 @@ import 'screens/level_select_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/splash_screen.dart';
 import 'screens/stats_screen.dart';
-import 'screens/store_screen.dart';
 import 'screens/world_map_screen.dart';
 import 'theme/app_theme.dart';
 
@@ -42,7 +41,8 @@ class _MazeGlowAppState extends State<MazeGlowApp> {
   String _currentRoute = '/splash';
 
   int _winStars = 3;
-  String _winTime = '00:24.18';
+  String _winTime = '00:24';
+  int _winMoves = 15;
   int _winCoins = 50;
   int _winGems = 2;
 
@@ -65,7 +65,15 @@ class _MazeGlowAppState extends State<MazeGlowApp> {
       debugShowCheckedModeBanner: false,
       scrollBehavior: NoStretchScrollBehavior(),
       theme: AppTheme.darkTheme,
-      home: _buildActiveScreen(),
+      home: PopScope(
+        canPop: _currentRoute == '/home' || _currentRoute == '/splash',
+        onPopInvokedWithResult: (didPop, result) {
+          if (!didPop && _currentRoute != '/home') {
+            _navigateTo('/home');
+          }
+        },
+        child: _buildActiveScreen(),
+      ),
     );
   }
 
@@ -91,10 +99,11 @@ class _MazeGlowAppState extends State<MazeGlowApp> {
       case '/gameplay':
         return GameplayScreen(
           onBack: () => _navigateTo('/home'),
-          onWinPayload: (stars, formattedTime, coinsEarned, gemsEarned) {
+          onWinPayload: (stars, formattedTime, moves, coinsEarned, gemsEarned) {
             setState(() {
               _winStars = stars;
               _winTime = formattedTime;
+              _winMoves = moves;
               _winCoins = coinsEarned;
               _winGems = gemsEarned;
             });
@@ -111,6 +120,7 @@ class _MazeGlowAppState extends State<MazeGlowApp> {
           },
           starsEarned: _winStars,
           formattedTime: _winTime,
+          moves: _winMoves,
           coinsEarned: _winCoins,
           gemsEarned: _winGems,
         );
@@ -124,8 +134,6 @@ class _MazeGlowAppState extends State<MazeGlowApp> {
           },
           onTabChanged: _handleTabChanged,
         );
-      case '/store':
-        return StoreScreen(onBack: () => _navigateTo('/home'));
       case '/how_to_play':
         return HowToPlayScreen(onGotIt: () => _navigateTo('/home'));
       case '/achievements':

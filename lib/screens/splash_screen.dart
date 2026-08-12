@@ -124,13 +124,7 @@ class SplashScreen extends StatelessWidget {
                       label: 'Achievements',
                       onTap: () => onNavigate('/achievements'),
                     ),
-                    const SizedBox(width: 32),
-                    _FooterLink(
-                      icon: Icons.store,
-                      label: 'Store',
-                      onTap: () => onNavigate('/store'),
-                    ),
-                    const SizedBox(width: 32),
+                    const SizedBox(width: 48),
                     _FooterLink(
                       icon: Icons.tune,
                       label: 'Settings',

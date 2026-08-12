@@ -1,7 +1,7 @@
 name: maze_glow_path
-description: "A new Flutter project."
+description: "Maze Glow Path: 3D Neon Puzzle - Cyber Arcade Labyrinth Game"
 publish_to: 'none'
-version: 0.1.0+1
+version: 1.0.2+2
 
 environment:
   sdk: ^3.12.2

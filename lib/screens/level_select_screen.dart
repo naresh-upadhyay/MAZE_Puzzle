@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/game_state.dart';
 import '../theme/app_theme.dart';
 
-class LevelSelectScreen extends StatelessWidget {
+class LevelSelectScreen extends StatefulWidget {
   final VoidCallback onBack;
   final Function(int level, String mode) onSelectLevel;
 
@@ -15,9 +15,46 @@ class LevelSelectScreen extends StatelessWidget {
   });
 
   @override
+  State<LevelSelectScreen> createState() => _LevelSelectScreenState();
+}
+
+class _LevelSelectScreenState extends State<LevelSelectScreen> {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToCurrentLevel();
+    });
+  }
+
+  void _scrollToCurrentLevel() {
+    final state = Provider.of<GameState>(context, listen: false);
+    final targetIndex = (state.currentLevel - 1).clamp(0, 100);
+    final rowIndex = (targetIndex / 4).floor();
+    final targetOffset = rowIndex * 92.0;
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        targetOffset.clamp(0.0, _scrollController.position.maxScrollExtent),
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeOut,
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+
+
+  @override
   Widget build(BuildContext context) {
     final state = Provider.of<GameState>(context);
-    final isSimple = state.selectedMode == 'simple';
+    final totalLevels = (state.currentLevel + 24).clamp(60, 120);
 
     return Scaffold(
       body: SafeArea(
@@ -31,7 +68,7 @@ class LevelSelectScreen extends StatelessWidget {
                 children: [
                   IconButton(
                     icon: const Icon(Icons.chevron_left, color: Colors.white, size: 28),
-                    onPressed: onBack,
+                    onPressed: widget.onBack,
                   ),
                   Text(
                     'SELECT LEVEL',
@@ -51,170 +88,73 @@ class LevelSelectScreen extends StatelessWidget {
               ),
               const SizedBox(height: 16),
 
-              // TOP CARD: Level Mode Preview Container matching Reference Screenshot 2
+              // TOP CARD: Level Stage Preview Container
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                 decoration: AppTheme.glassCardDecoration(glowColor: AppTheme.primaryGlow),
-                child: Column(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'LEVEL ${state.currentLevel}',
-                      style: GoogleFonts.orbitron(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.white,
-                        letterSpacing: 2,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // SIMPLE MODE CARD
-                        Expanded(
-                          child: GestureDetector(
-                            onTap: () => state.setMode('simple'),
-                            child: Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: isSimple ? const Color(0x2000FF9D) : Colors.black.withValues(alpha: 0.3),
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                  color: isSimple ? AppTheme.primaryGlow : Colors.white.withValues(alpha: 0.1),
-                                  width: isSimple ? 2 : 1,
-                                ),
-                              ),
-                              child: Column(
-                                children: [
-                                  Text(
-                                    'SIMPLE',
-                                    style: GoogleFonts.orbitron(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.bold,
-                                      color: AppTheme.primaryGlow,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  // Green Neon Maze Thumbnail Icon
-                                  Container(
-                                    width: 56,
-                                    height: 56,
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF060713),
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(color: AppTheme.primaryGlow.withValues(alpha: 0.5)),
-                                    ),
-                                    child: const Icon(Icons.grid_view, size: 36, color: AppTheme.primaryGlow),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  const Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(Icons.star, size: 14, color: AppTheme.accentGold),
-                                      Icon(Icons.star, size: 14, color: AppTheme.accentGold),
-                                      Icon(Icons.star, size: 14, color: AppTheme.accentGold),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'BEST TIME',
-                                    style: GoogleFonts.outfit(fontSize: 10, color: AppTheme.textMuted),
-                                  ),
-                                  Text(
-                                    '00:28.34',
-                                    style: GoogleFonts.orbitron(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white),
-                                  ),
-                                ],
-                              ),
-                            ),
+                        Text(
+                          'CURRENT LEVEL: ${state.currentLevel}',
+                          style: GoogleFonts.orbitron(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white,
+                            letterSpacing: 1.5,
                           ),
                         ),
-                        const SizedBox(width: 12),
-
-                        // COMPLICATED MODE CARD
-                        Expanded(
-                          child: GestureDetector(
-                            onTap: () => state.setMode('complicated'),
-                            child: Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: !isSimple ? const Color(0x20FF2A6D) : Colors.black.withValues(alpha: 0.3),
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                  color: !isSimple ? AppTheme.accentPink : Colors.white.withValues(alpha: 0.1),
-                                  width: !isSimple ? 2 : 1,
-                                ),
-                              ),
-                              child: Column(
-                                children: [
-                                  Text(
-                                    'COMPLICATED',
-                                    style: GoogleFonts.orbitron(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.bold,
-                                      color: AppTheme.accentPink,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  // Red/Orange Neon Maze Thumbnail Icon
-                                  Container(
-                                    width: 56,
-                                    height: 56,
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF060713),
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(color: AppTheme.accentPink.withValues(alpha: 0.5)),
-                                    ),
-                                    child: const Icon(Icons.apps, size: 36, color: AppTheme.accentPink),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  const Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(Icons.star, size: 14, color: AppTheme.accentGold),
-                                      Icon(Icons.star, size: 14, color: AppTheme.accentGold),
-                                      Icon(Icons.star_border, size: 14, color: Colors.white24),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'BEST TIME',
-                                    style: GoogleFonts.outfit(fontSize: 10, color: AppTheme.textMuted),
-                                  ),
-                                  Text(
-                                    '01:24.58',
-                                    style: GoogleFonts.orbitron(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white),
-                                  ),
-                                ],
-                              ),
-                            ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '2 Puzzles: Simple ➔ Complicated Multi-Path',
+                          style: GoogleFonts.outfit(
+                            fontSize: 12,
+                            color: AppTheme.primaryGlow,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ],
                     ),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0x2000FF9D),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppTheme.primaryGlow.withValues(alpha: 0.5)),
+                      ),
+                      child: const Icon(Icons.extension, color: AppTheme.primaryGlow, size: 28),
+                    ),
                   ],
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
 
-              // LEVEL GRID (2 Rows of Level Selection Buttons)
+              // LEVEL GRID (Full Scrollable Grid starting from Level 1 to 60+)
               Expanded(
                 child: GridView.builder(
+                  controller: _scrollController,
+                  physics: const BouncingScrollPhysics(),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 4,
                     crossAxisSpacing: 12,
                     mainAxisSpacing: 12,
                     childAspectRatio: 1.0,
                   ),
-                  itemCount: 8, // Levels 24 to 31 matching reference
+                  itemCount: totalLevels,
                   itemBuilder: (context, index) {
-                    final lvlNum = 24 + index;
+                    final lvlNum = index + 1;
                     final isUnlocked = lvlNum <= state.currentLevel + 2;
                     final isActive = lvlNum == state.currentLevel;
+                    final lp = state.levelProgress[state.selectedMode]?[lvlNum];
+                    final stars = lp?.stars ?? (lvlNum < state.currentLevel ? 3 : 0);
 
                     return GestureDetector(
                       onTap: () {
                         if (isUnlocked) {
-                          onSelectLevel(lvlNum, state.selectedMode);
+                          widget.onSelectLevel(lvlNum, state.selectedMode);
                         }
                       },
                       child: Container(
@@ -255,13 +195,16 @@ class LevelSelectScreen extends StatelessWidget {
                             ),
                             const SizedBox(height: 2),
                             if (isUnlocked && !isActive)
-                              const Row(
+                              Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.star, size: 10, color: AppTheme.accentGold),
-                                  Icon(Icons.star, size: 10, color: AppTheme.accentGold),
-                                  Icon(Icons.star, size: 10, color: AppTheme.accentGold),
-                                ],
+                                children: List.generate(
+                                  3,
+                                  (i) => Icon(
+                                    Icons.star,
+                                    size: 10,
+                                    color: i < stars ? AppTheme.accentGold : Colors.white24,
+                                  ),
+                                ),
                               )
                             else if (!isUnlocked)
                               const Icon(Icons.lock, size: 14, color: AppTheme.textMuted),
@@ -272,10 +215,11 @@ class LevelSelectScreen extends StatelessWidget {
                   },
                 ),
               ),
+              const SizedBox(height: 12),
 
               // BOTTOM CARD: Wide INFINITE LEVELS Button Card
               GestureDetector(
-                onTap: () => onSelectLevel(1, 'infinite'),
+                onTap: () => widget.onSelectLevel(1, 'infinite'),
                 child: Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 16),

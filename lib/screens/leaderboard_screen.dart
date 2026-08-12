@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import '../models/game_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/bottom_tab_bar.dart';
 
@@ -15,9 +17,23 @@ class LeaderboardScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final state = Provider.of<GameState>(context);
+
+    // Calculate user's best overall time
+    double bestSec = 999999;
+    String userBestTime = '00:24.18';
+    state.levelProgress.forEach((mode, innerMap) {
+      innerMap.forEach((lvl, lp) {
+        if (lp.completed && lp.bestTimeSec < bestSec) {
+          bestSec = lp.bestTimeSec;
+          userBestTime = lp.bestTime;
+        }
+      });
+    });
+
     final rankings = [
       {'rank': 4, 'name': 'Vihaan', 'time': '00:19.88', 'isUser': false},
-      {'rank': 5, 'name': 'You', 'time': '00:24.18', 'isUser': true},
+      {'rank': 5, 'name': 'You', 'time': userBestTime, 'isUser': true},
       {'rank': 6, 'name': 'Aryan', 'time': '00:25.67', 'isUser': false},
       {'rank': 7, 'name': 'Neha', 'time': '00:27.31', 'isUser': false},
     ];

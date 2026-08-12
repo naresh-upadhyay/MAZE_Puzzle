@@ -18,6 +18,29 @@ class StatsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final state = Provider.of<GameState>(context);
+    // Calculate dynamic stats
+    double bestSec = 999999;
+    String bestTimeFormatted = '--:--';
+    int completedCount = 0;
+    state.levelProgress.forEach((mode, innerMap) {
+      innerMap.forEach((lvl, lp) {
+        if (lp.completed) {
+          completedCount++;
+          if (lp.bestTimeSec < bestSec) {
+            bestSec = lp.bestTimeSec;
+            bestTimeFormatted = lp.bestTime;
+          }
+        }
+      });
+    });
+
+    final totalMins = (state.totalTimeSec / 60).floor();
+    final hours = (totalMins / 60).floor();
+    final mins = totalMins % 60;
+    final totalTimeFormatted = hours > 0 ? '${hours}h ${mins}m' : '${mins}m';
+
+    final completionRatio = (completedCount / 50.0).clamp(0.0, 1.0);
+    final completionPct = (completionRatio * 100).round();
 
     return Scaffold(
       body: SafeArea(
@@ -56,8 +79,8 @@ class StatsScreen extends StatelessWidget {
                       children: [
                         _StatBox(label: 'MAZES SOLVED', val: '${state.mazesSolved}'),
                         _StatBox(label: 'PERFECT RUNS', val: '${state.perfectRuns}'),
-                        _StatBox(label: 'BEST TIME', val: '00:18.42'),
-                        _StatBox(label: 'TOTAL TIME', val: '2h 34m'),
+                        _StatBox(label: 'BEST TIME', val: bestTimeFormatted),
+                        _StatBox(label: 'TOTAL TIME', val: totalTimeFormatted),
                       ],
                     ),
                     const SizedBox(height: 16),
@@ -116,7 +139,7 @@ class StatsScreen extends StatelessWidget {
                                   width: 120,
                                   height: 120,
                                   child: CircularProgressIndicator(
-                                    value: 0.78,
+                                    value: completionRatio,
                                     strokeWidth: 12,
                                     backgroundColor: Colors.white10,
                                     valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.primaryGlow),
@@ -126,7 +149,7 @@ class StatsScreen extends StatelessWidget {
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     Text(
-                                      '78%',
+                                      '$completionPct%',
                                       style: GoogleFonts.orbitron(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.white),
                                     ),
                                     Text(
