@@ -80,33 +80,53 @@ class MazeFlameGame extends FlameGame with PanDetector, TapCallbacks {
     final exitCorePaint = Paint()..color = const Color(0xFFFF3366);
     canvas.drawCircle(exitCenter, (cellWidth * 0.18).clamp(3.0, 10.0), exitCorePaint);
 
-    // 2. Draw Maze Walls (Single pass: Top and Left per cell + Right for last col + Bottom for last row)
-    final wallPaint = Paint()
-      ..color = themeColor
-      ..strokeWidth = (cellWidth * 0.12).clamp(3.0, 10.0)
-      ..strokeCap = StrokeCap.round
-      ..maskFilter = const MaskFilter.blur(BlurStyle.solid, 4.0);
+    // 2. Draw 3D Beveled Walls (Pass 1: Drop Shadows; Pass 2: Bevel Body; Pass 3: Top Edge Highlights)
+    final shadowPaint = Paint()
+      ..color = const Color(0xFF03040A)
+      ..strokeWidth = (cellWidth * 0.16).clamp(4.0, 12.0)
+      ..strokeCap = StrokeCap.square;
 
-    for (int r = 0; r < rows; r++) {
-      for (int c = 0; c < cols; c++) {
-        final cell = generator.grid[r][c];
-        final x = c * cellWidth;
-        final y = r * cellHeight;
+    final wallBodyPaint = Paint()
+      ..color = themeColor == const Color(0xFFFF3366) || themeColor == const Color(0xFFFF2A6D)
+          ? const Color(0xFF2E121B)
+          : const Color(0xFF141A3A)
+      ..strokeWidth = (cellWidth * 0.14).clamp(3.5, 10.0)
+      ..strokeCap = StrokeCap.square;
 
-        if (cell.walls.top) {
-          canvas.drawLine(Offset(x, y), Offset(x + cellWidth, y), wallPaint);
-        }
-        if (cell.walls.left) {
-          canvas.drawLine(Offset(x, y), Offset(x, y + cellHeight), wallPaint);
-        }
-        if (c == cols - 1 && cell.walls.right) {
-          canvas.drawLine(Offset(x + cellWidth, y), Offset(x + cellWidth, y + cellHeight), wallPaint);
-        }
-        if (r == rows - 1 && cell.walls.bottom) {
-          canvas.drawLine(Offset(x, y + cellHeight), Offset(x + cellWidth, y + cellHeight), wallPaint);
+    final highlightPaint = Paint()
+      ..color = themeColor == const Color(0xFFFF3366) || themeColor == const Color(0xFFFF2A6D)
+          ? const Color(0xFF5E2737)
+          : const Color(0xFF2D3B7A)
+      ..strokeWidth = (cellWidth * 0.05).clamp(1.5, 3.5)
+      ..strokeCap = StrokeCap.square;
+
+    void drawWallLines(Paint paint, {double dx = 0, double dy = 0}) {
+      for (int r = 0; r < rows; r++) {
+        for (int c = 0; c < cols; c++) {
+          final cell = generator.grid[r][c];
+          final x = c * cellWidth + dx;
+          final y = r * cellHeight + dy;
+
+          if (cell.walls.top) {
+            canvas.drawLine(Offset(x, y), Offset(x + cellWidth, y), paint);
+          }
+          if (cell.walls.left) {
+            canvas.drawLine(Offset(x, y), Offset(x, y + cellHeight), paint);
+          }
+          if (c == cols - 1 && cell.walls.right) {
+            canvas.drawLine(Offset(x + cellWidth, y), Offset(x + cellWidth, y + cellHeight), paint);
+          }
+          if (r == rows - 1 && cell.walls.bottom) {
+            canvas.drawLine(Offset(x, y + cellHeight), Offset(x + cellWidth, y + cellHeight), paint);
+          }
         }
       }
     }
+
+    // Render 3D Wall Layers
+    drawWallLines(shadowPaint, dx: 2.5, dy: 2.5);
+    drawWallLines(wallBodyPaint);
+    drawWallLines(highlightPaint, dx: -1.0, dy: -1.0);
 
     // 3. Draw Hint Solution Path (Gold Lines)
     if (hintPath.isNotEmpty) {
@@ -126,33 +146,60 @@ class MazeFlameGame extends FlameGame with PanDetector, TapCallbacks {
       }
     }
 
-    // 4. Draw User Glowing Traced Path
+    // 4. Draw Multi-Layer Neon Glowing Path Tube
     if (userPath.isNotEmpty) {
-      final pathPaint = Paint()
-        ..color = themeColor
-        ..strokeWidth = cellWidth * 0.35
+      // Layer A: Soft Radial Blur Aura
+      final outerAuraPaint = Paint()
+        ..color = themeColor.withValues(alpha: 0.40)
+        ..strokeWidth = cellWidth * 0.45
         ..strokeCap = StrokeCap.round
         ..strokeJoin = StrokeJoin.round
-        ..maskFilter = const MaskFilter.blur(BlurStyle.solid, 8.0);
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12.0);
+
+      // Layer B: Solid Primary Neon Body
+      final neonBodyPaint = Paint()
+        ..color = themeColor
+        ..strokeWidth = cellWidth * 0.28
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round
+        ..maskFilter = const MaskFilter.blur(BlurStyle.solid, 3.0);
+
+      // Layer C: Bright White-Hot Inner Core Filament
+      final coreWhitePaint = Paint()
+        ..color = Colors.white
+        ..strokeWidth = cellWidth * 0.12
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round;
 
       for (int i = 0; i < userPath.length - 1; i++) {
         final p1 = userPath[i];
         final p2 = userPath[i + 1];
         final c1 = Offset(p1.c * cellWidth + cellWidth / 2, p1.r * cellHeight + cellHeight / 2);
         final c2 = Offset(p2.c * cellWidth + cellWidth / 2, p2.r * cellHeight + cellHeight / 2);
-        canvas.drawLine(c1, c2, pathPaint);
+        canvas.drawLine(c1, c2, outerAuraPaint);
+        canvas.drawLine(c1, c2, neonBodyPaint);
+        canvas.drawLine(c1, c2, coreWhitePaint);
       }
 
-      // Draw Cursor Endpoint Node
+      // Draw Interactive Touch Cursor Node with Outer Pulsing Touch Ring
       final last = userPath.last;
       final headCenter = Offset(last.c * cellWidth + cellWidth / 2, last.r * cellHeight + cellHeight / 2);
-      final headPaint = Paint()..color = Colors.white;
+
+      final touchRingPaint = Paint()
+        ..color = themeColor.withValues(alpha: 0.6)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.5
+        ..maskFilter = const MaskFilter.blur(BlurStyle.solid, 6.0);
+
       final headGlowPaint = Paint()
         ..color = themeColor
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10.0);
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12.0);
 
+      final headCorePaint = Paint()..color = Colors.white;
+
+      canvas.drawCircle(headCenter, cellWidth * 0.38, touchRingPaint);
       canvas.drawCircle(headCenter, cellWidth * 0.28, headGlowPaint);
-      canvas.drawCircle(headCenter, cellWidth * 0.20, headPaint);
+      canvas.drawCircle(headCenter, cellWidth * 0.16, headCorePaint);
     }
   }
 

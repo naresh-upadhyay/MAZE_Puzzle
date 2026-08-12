@@ -170,6 +170,14 @@ class HomeScreen extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             _MenuCard(
+              icon: Icons.help_outline,
+              iconColor: AppTheme.secondaryGlow,
+              title: 'HOW TO PLAY',
+              subtitle: 'Learn the Rules & Controls',
+              onTap: () => onNavigate('/how_to_play'),
+            ),
+            const SizedBox(height: 10),
+            _MenuCard(
               icon: Icons.map,
               iconColor: AppTheme.primaryGlow,
               title: 'WORLD MAP',

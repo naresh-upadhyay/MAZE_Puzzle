@@ -4,6 +4,7 @@ import 'models/game_state.dart';
 import 'screens/achievements_screen.dart';
 import 'screens/gameplay_screen.dart';
 import 'screens/home_screen.dart';
+import 'screens/how_to_play_screen.dart';
 import 'screens/leaderboard_screen.dart';
 import 'screens/level_complete_overlay.dart';
 import 'screens/level_select_screen.dart';
@@ -125,6 +126,8 @@ class _MazeGlowAppState extends State<MazeGlowApp> {
         );
       case '/store':
         return StoreScreen(onBack: () => _navigateTo('/home'));
+      case '/how_to_play':
+        return HowToPlayScreen(onGotIt: () => _navigateTo('/home'));
       case '/achievements':
         return AchievementsScreen(onBack: () => _navigateTo('/home'));
       case '/settings':

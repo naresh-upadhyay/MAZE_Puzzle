@@ -14,11 +14,51 @@ class StoreScreen extends StatelessWidget {
     final state = Provider.of<GameState>(context);
 
     final shopItems = [
-      {'id': 'neon', 'name': 'NEON GREEN', 'desc': 'Classic glow path theme', 'price': 0, 'label': 'EQUIPPED', 'icon': Icons.shield, 'color': const Color(0xFF00FF9D)},
-      {'id': 'forest', 'name': 'EMERALD FOREST', 'desc': 'Deep woods emerald glow', 'price': 10, 'label': '10 GEMS', 'icon': Icons.park, 'color': const Color(0xFF00FF66)},
-      {'id': 'ocean', 'name': 'CYBER OCEAN', 'desc': 'Neon cyan water theme', 'price': 15, 'label': '15 GEMS', 'icon': Icons.water_drop, 'color': const Color(0xFF00D2FF)},
-      {'id': 'lava', 'name': 'MOLTEN LAVA', 'desc': 'Fiery crimson path theme', 'price': 20, 'label': '20 GEMS', 'icon': Icons.local_fire_department, 'color': const Color(0xFFFF3366)},
-      {'id': 'space', 'name': 'DEEP SPACE', 'desc': 'Cosmic purple glow theme', 'price': 25, 'label': '25 GEMS', 'icon': Icons.blur_on, 'color': const Color(0xFFB537FF)},
+      {
+        'id': 'neon',
+        'name': 'NEON',
+        'desc': 'Classic cyber neon maze path',
+        'price': 0,
+        'color': const Color(0xFF00FF9D),
+        'bgGradient': const [Color(0xFF0E2E20), Color(0xFF040B08)],
+        'icon': Icons.shield,
+      },
+      {
+        'id': 'forest',
+        'name': 'FOREST',
+        'desc': 'Mystic emerald canopy theme',
+        'price': 100,
+        'color': const Color(0xFF00FF66),
+        'bgGradient': const [Color(0xFF0C2B14), Color(0xFF030A05)],
+        'icon': Icons.park,
+      },
+      {
+        'id': 'ocean',
+        'name': 'OCEAN',
+        'desc': 'Deep cyber abyss blue theme',
+        'price': 150,
+        'color': const Color(0xFF00D2FF),
+        'bgGradient': const [Color(0xFF0A2436), Color(0xFF02090F)],
+        'icon': Icons.water_drop,
+      },
+      {
+        'id': 'lava',
+        'name': 'LAVA',
+        'desc': 'Molten volcanic magma path',
+        'price': 200,
+        'color': const Color(0xFFFF3366),
+        'bgGradient': const [Color(0xFF380D17), Color(0xFF0F0205)],
+        'icon': Icons.local_fire_department,
+      },
+      {
+        'id': 'space',
+        'name': 'SPACE',
+        'desc': 'Cosmic nebula galaxy theme',
+        'price': 250,
+        'color': const Color(0xFFB537FF),
+        'bgGradient': const [Color(0xFF260D38), Color(0xFF09020F)],
+        'icon': Icons.blur_on,
+      },
     ];
 
     return Scaffold(
@@ -27,7 +67,7 @@ class StoreScreen extends StatelessWidget {
           padding: const EdgeInsets.all(16.0),
           child: Column(
             children: [
-              // Header
+              // Header Row matching Reference Screenshot 8
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -41,7 +81,7 @@ class StoreScreen extends StatelessWidget {
                   ),
                   Row(
                     children: [
-                      const Icon(Icons.diamond, size: 14, color: AppTheme.accentBlue),
+                      const Icon(Icons.diamond, size: 16, color: AppTheme.accentBlue),
                       const SizedBox(width: 4),
                       Text(
                         '${state.gems}',
@@ -53,7 +93,7 @@ class StoreScreen extends StatelessWidget {
               ),
               const SizedBox(height: 16),
 
-              // Category Tabs
+              // Category Tabs matching Reference Screenshot 8
               Row(
                 children: [
                   _StoreTab(label: 'THEMES', isSelected: true),
@@ -65,7 +105,7 @@ class StoreScreen extends StatelessWidget {
               ),
               const SizedBox(height: 16),
 
-              // Items List
+              // Rich Theme List matching Reference Screenshot 8
               Expanded(
                 child: ListView.builder(
                   itemCount: shopItems.length,
@@ -76,72 +116,147 @@ class StoreScreen extends StatelessWidget {
                     final isEquipped = itemId == state.equippedTheme;
                     final isUnlocked = state.unlockedThemes.contains(itemId);
                     final gemPrice = item['price'] as int;
-
-                    String btnText = 'EQUIPPED ✔';
-                    if (!isEquipped) {
-                      btnText = isUnlocked ? 'EQUIP' : '${item['label']}';
-                    }
+                    final bgGradient = item['bgGradient'] as List<Color>;
 
                     return Container(
+                      height: 80,
                       margin: const EdgeInsets.only(bottom: 12),
-                      padding: const EdgeInsets.all(14),
-                      decoration: AppTheme.glassCardDecoration(),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 50,
-                            height: 50,
-                            decoration: BoxDecoration(
-                              color: Colors.black,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Center(
-                              child: Icon(
-                                item['icon'] as IconData,
-                                size: 24,
-                                color: itemColor,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: bgGradient,
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isEquipped
+                              ? AppTheme.primaryGlow
+                              : itemColor.withValues(alpha: 0.3),
+                          width: isEquipped ? 2 : 1,
+                        ),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Row(
+                          children: [
+                            // Theme Artwork Preview Box
+                            Container(
+                              width: 50,
+                              height: 50,
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: 0.4),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: itemColor, width: 1.5),
                               ),
-                            ),
-                          ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  item['name'] as String,
-                                  style: GoogleFonts.orbitron(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+                              child: Center(
+                                child: Icon(
+                                  item['icon'] as IconData,
+                                  color: itemColor,
+                                  size: 28,
                                 ),
-                                Text(
-                                  item['desc'] as String,
-                                  style: GoogleFonts.outfit(fontSize: 12, color: AppTheme.textMuted),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+
+                            // Theme Info
+                            Expanded(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    item['name'] as String,
+                                    style: GoogleFonts.orbitron(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    item['desc'] as String,
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 11,
+                                      color: AppTheme.textMuted,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            // Action Button matching Reference Screenshot 8
+                            GestureDetector(
+                              onTap: () {
+                                if (!isEquipped) {
+                                  state.buyAndEquipTheme(itemId, gemPrice);
+                                }
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: isEquipped
+                                      ? AppTheme.primaryGlow.withValues(alpha: 0.15)
+                                      : (isUnlocked ? AppTheme.accentBlue : AppTheme.bgSurface),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: isEquipped
+                                        ? AppTheme.primaryGlow
+                                        : (isUnlocked ? AppTheme.accentBlue : Colors.white24),
+                                  ),
                                 ),
-                              ],
-                            ),
-                          ),
-                          ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: isEquipped
-                                  ? AppTheme.primaryGlow.withValues(alpha: 0.2)
-                                  : AppTheme.accentBlue.withValues(alpha: 0.2),
-                              side: BorderSide(
-                                color: isEquipped ? AppTheme.primaryGlow : AppTheme.accentBlue,
+                                child: isEquipped
+                                    ? Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            'EQUIPPED',
+                                            style: GoogleFonts.orbitron(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.bold,
+                                              color: AppTheme.primaryGlow,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 4),
+                                          const Icon(Icons.check_circle, size: 14, color: AppTheme.primaryGlow),
+                                        ],
+                                      )
+                                    : isUnlocked
+                                        ? Text(
+                                            'EQUIP',
+                                            style: GoogleFonts.orbitron(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.white,
+                                            ),
+                                          )
+                                        : Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Text(
+                                                'UNLOCK',
+                                                style: GoogleFonts.orbitron(
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.white,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 4),
+                                              const Icon(Icons.diamond, size: 12, color: AppTheme.accentBlue),
+                                              const SizedBox(width: 2),
+                                              Text(
+                                                '$gemPrice',
+                                                style: GoogleFonts.orbitron(
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: AppTheme.accentBlue,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
                               ),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(50)),
                             ),
-                            onPressed: () {
-                              state.buyAndEquipTheme(itemId, gemPrice);
-                            },
-                            child: Text(
-                              btnText,
-                              style: GoogleFonts.orbitron(
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                color: isEquipped ? AppTheme.primaryGlow : AppTheme.accentBlue,
-                              ),
-                            ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     );
                   },
@@ -167,8 +282,11 @@ class _StoreTab extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? AppTheme.primaryGlow : Colors.white.withValues(alpha: 0.06),
+          color: isSelected ? AppTheme.bgSurface : Colors.white.withValues(alpha: 0.04),
           borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? AppTheme.primaryGlow : Colors.white10,
+          ),
         ),
         child: Center(
           child: Text(
@@ -176,7 +294,7 @@ class _StoreTab extends StatelessWidget {
             style: GoogleFonts.orbitron(
               fontSize: 12,
               fontWeight: FontWeight.bold,
-              color: isSelected ? Colors.black : AppTheme.textMuted,
+              color: isSelected ? AppTheme.primaryGlow : AppTheme.textMuted,
             ),
           ),
         ),
