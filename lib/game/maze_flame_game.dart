@@ -231,20 +231,30 @@ class MazeFlameGame extends FlameGame with PanDetector, TapCallbacks {
       }
     }
 
-    // Sparkles while moving
+    // Rich Sparkles while moving finger
     if (_headPos != null && !isCompleted && currentTouchPos != null) {
       _particleTimer += dt;
-      if (_particleTimer >= 0.035) {
+      if (_particleTimer >= 0.025) {
         _particleTimer = 0;
-        _emitParticles(_headPos!, 2);
+        _emitParticles(_headPos!, 3);
       }
     }
     _particles.retainWhere((p) => p.update(dt));
 
-    // Win animation
+    // Win animation: Shortest path energy sweep wave
     if (_winAnimating) {
       _winAnimTimer += dt;
-      _winWaveProgress = (_winAnimTimer / 0.8).clamp(0.0, 1.0);
+      _winWaveProgress = (_winAnimTimer / 1.15).clamp(0.0, 1.0);
+
+      // Emit energy sparkles along the shortest solution path as the wave travels
+      final solution = generator.solutionPath;
+      if (solution.isNotEmpty && size.x > 0 && size.y > 0) {
+        final cw = size.x / generator.cols;
+        final ch = size.y / generator.rows;
+        final currIndex = (_winWaveProgress * (solution.length - 1)).floor().clamp(0, solution.length - 1);
+        final pt = _cellCenter(solution[currIndex], cw, ch);
+        _emitParticles(pt, 2);
+      }
       _winParticles.retainWhere((p) => p.update(dt));
     }
   }
@@ -556,29 +566,87 @@ class MazeFlameGame extends FlameGame with PanDetector, TapCallbacks {
     }
   }
 
-  // ── Energy orb cursor ──────────────────────────────────────────────────────
+  // ── Juicy Finger Gesture Cursor with Concentric Ripples & Glow ─────────────
   void _drawOrb(Canvas canvas, Offset pos) {
-    final pulse = (math.sin(_pulsePhase) + 1) / 2;
-    final r = 7.0 + pulse * 2.0;
+    final pulse = (math.sin(_pulsePhase * 2.0) + 1) / 2;
+    final r = 9.0 + pulse * 3.0;
 
-    _orbGlow.color = (_errorTimer > 0.05 ? const Color(0xFFFF3030) : themeColor)
-        .withValues(alpha: 0.35 + pulse * 0.25);
-    canvas.drawCircle(pos, r * 2.2, _orbGlow);
+    final cursorColor = _errorTimer > 0.05 ? const Color(0xFFFF3030) : themeColor;
 
+    // 1. Concentric shockwave ripple 1
+    final rip1 = (_pulsePhase % math.pi) / math.pi; // 0 to 1
+    _sharedStroke
+      ..color = cursorColor.withValues(alpha: (1.0 - rip1) * 0.40)
+      ..strokeWidth = 1.8;
+    canvas.drawCircle(pos, 8.0 + rip1 * 18.0, _sharedStroke);
+
+    // 2. Concentric shockwave ripple 2
+    final rip2 = ((_pulsePhase + math.pi / 2) % math.pi) / math.pi;
+    _sharedStroke
+      ..color = cursorColor.withValues(alpha: (1.0 - rip2) * 0.30)
+      ..strokeWidth = 1.5;
+    canvas.drawCircle(pos, 8.0 + rip2 * 14.0, _sharedStroke);
+
+    // 3. Outer soft bloom halo
+    _orbGlow.color = cursorColor.withValues(alpha: 0.28 + pulse * 0.22);
+    canvas.drawCircle(pos, r * 2.5, _orbGlow);
+
+    // 4. Bright aura ring
+    _sharedStroke
+      ..color = cursorColor.withValues(alpha: 0.85)
+      ..strokeWidth = 2.2;
+    canvas.drawCircle(pos, r * 1.1, _sharedStroke);
+
+    // 5. White Hot Core
     _orbCore.color = _errorTimer > 0.05 ? const Color(0xFFFF7070) : Colors.white;
-    canvas.drawCircle(pos, r, _orbCore);
+    canvas.drawCircle(pos, r * 0.55, _orbCore);
   }
 
-  // ── Win wave ───────────────────────────────────────────────────────────────
+  // ── Win wave: Show Shortest Optimal Path to Exit ────────────────────────────
   void _drawWinWave(Canvas canvas, double cw, double ch) {
-    if (userPath.isEmpty) return;
-    final count = (userPath.length * _winWaveProgress).floor().clamp(0, userPath.length - 1);
-    for (int i = 0; i <= count; i++) {
-      final c = _cellCenter(userPath[i], cw, ch);
-      final age = (_winWaveProgress * userPath.length - i).clamp(0.0, 3.0);
-      final alpha = (1.0 - age / 3.0).clamp(0.0, 1.0);
-      _sharedFill.color = Colors.white.withValues(alpha: alpha * 0.7);
-      canvas.drawCircle(c, cw * 0.35 * (1 + (1 - alpha)), _sharedFill);
+    final solution = generator.solutionPath;
+    if (solution.length < 2) return;
+
+    final waveEnd = (_winWaveProgress * (solution.length - 1)).round().clamp(0, solution.length - 1);
+    final litPath = solution.sublist(0, waveEnd + 1);
+
+    if (litPath.length >= 2) {
+      final p = _buildCellPath(litPath, cw, ch);
+
+      // 1. Outer Golden Glow along shortest path
+      _sharedStroke
+        ..color = const Color(0xFFFFD700).withValues(alpha: 0.45)
+        ..strokeWidth = (cw * 0.45).clamp(8.0, 22.0)
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round;
+      canvas.drawPath(p, _sharedStroke);
+
+      // 2. Mid Neon Cyan/Gold Beam
+      _sharedStroke
+        ..color = const Color(0xFF00FFD0).withValues(alpha: 0.90)
+        ..strokeWidth = (cw * 0.22).clamp(4.0, 10.0)
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round;
+      canvas.drawPath(p, _sharedStroke);
+
+      // 3. Bright White Core
+      _sharedStroke
+        ..color = Colors.white
+        ..strokeWidth = (cw * 0.10).clamp(2.0, 5.0)
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round;
+      canvas.drawPath(p, _sharedStroke);
+
+      // 4. Wave Leader Head Orb (Races along the shortest path)
+      final leadCell = litPath.last;
+      final leadPos = _cellCenter(leadCell, cw, ch);
+      final pulse = (math.sin(_pulsePhase * 3) + 1) / 2;
+
+      _sharedFill.color = const Color(0xFFFFD700).withValues(alpha: 0.6);
+      canvas.drawCircle(leadPos, (cw * 0.38).clamp(6.0, 18.0) + pulse * 4, _sharedFill);
+
+      _sharedFill.color = Colors.white;
+      canvas.drawCircle(leadPos, (cw * 0.18).clamp(3.0, 8.0), _sharedFill);
     }
   }
 
@@ -914,7 +982,7 @@ class MazeFlameGame extends FlameGame with PanDetector, TapCallbacks {
     _emitWinBurst(exitPos);
 
     HapticFeedback.mediumImpact();
-    Future.delayed(const Duration(milliseconds: 900), onWin);
+    Future.delayed(const Duration(milliseconds: 1400), onWin);
   }
 
   // ── Public controls ───────────────────────────────────────────────────────
