@@ -133,9 +133,19 @@ class MazeGenerator {
     // 4. Post-process to remove any 3-open isolated wall stubs for clean continuous 3D walls
     _refineWallStubs();
 
-    // 5. Open Outer Boundary Walls: Exactly 1 ENTRY GATE (bottom) and 1 EXIT GATE (top)
-    grid[startPos.r][startPos.c].walls.bottom = false;
-    grid[exitPos.r][exitPos.c].walls.top = false;
+    // 5. Enforce 100% Solid Outer Boundary Walls with exactly 1 ENTRY GATE (bottom) and 1 EXIT GATE (top)
+    _enforceOuterBoundaryWalls();
+  }
+
+  void _enforceOuterBoundaryWalls() {
+    for (int c = 0; c < cols; c++) {
+      grid[0][c].walls.top = (c != exitPos.c);
+      grid[rows - 1][c].walls.bottom = (c != startPos.c);
+    }
+    for (int r = 0; r < rows; r++) {
+      grid[r][0].walls.left = true;
+      grid[r][cols - 1].walls.right = true;
+    }
   }
 
   void _fillUnvisitedCellsWithDFS(Random rng) {

@@ -252,30 +252,37 @@ class MazeFlameGame extends FlameGame with PanDetector, TapCallbacks {
     final shadow = Path(), body = Path(), highlight = Path();
     final cols = generator.cols, rows = generator.rows;
 
+    final wallThick = (cw * 0.22).clamp(5.0, 16.0);
+    final halfWall = wallThick / 2.0;
+
     for (int r = 0; r < rows; r++) {
       for (int c = 0; c < cols; c++) {
         final cell = generator.grid[r][c];
         final x = c * cw, y = r * ch;
 
         if (cell.walls.top) {
-          _seg(shadow, x, y, x + cw, y, dx: 2.0, dy: 2.0);
-          _seg(body, x, y, x + cw, y);
-          _seg(highlight, x, y, x + cw, y, dx: -0.8, dy: -0.8);
+          final wy = (r == 0) ? halfWall : y;
+          _seg(shadow, x, wy, x + cw, wy, dx: 2.0, dy: 2.0);
+          _seg(body, x, wy, x + cw, wy);
+          _seg(highlight, x, wy, x + cw, wy, dx: -0.8, dy: -0.8);
         }
         if (cell.walls.left) {
-          _seg(shadow, x, y, x, y + ch, dx: 2.0, dy: 2.0);
-          _seg(body, x, y, x, y + ch);
-          _seg(highlight, x, y, x, y + ch, dx: -0.8, dy: -0.8);
+          final wx = (c == 0) ? halfWall : x;
+          _seg(shadow, wx, y, wx, y + ch, dx: 2.0, dy: 2.0);
+          _seg(body, wx, y, wx, y + ch);
+          _seg(highlight, wx, y, wx, y + ch, dx: -0.8, dy: -0.8);
         }
         if (c == cols - 1 && cell.walls.right) {
-          _seg(shadow, x + cw, y, x + cw, y + ch, dx: 2.0, dy: 2.0);
-          _seg(body, x + cw, y, x + cw, y + ch);
-          _seg(highlight, x + cw, y, x + cw, y + ch, dx: -0.8, dy: -0.8);
+          final wx = size.x - halfWall;
+          _seg(shadow, wx, y, wx, y + ch, dx: 2.0, dy: 2.0);
+          _seg(body, wx, y, wx, y + ch);
+          _seg(highlight, wx, y, wx, y + ch, dx: -0.8, dy: -0.8);
         }
         if (r == rows - 1 && cell.walls.bottom) {
-          _seg(shadow, x, y + ch, x + cw, y + ch, dx: 2.0, dy: 2.0);
-          _seg(body, x, y + ch, x + cw, y + ch);
-          _seg(highlight, x, y + ch, x + cw, y + ch, dx: -0.8, dy: -0.8);
+          final wy = size.y - halfWall;
+          _seg(shadow, x, wy, x + cw, wy, dx: 2.0, dy: 2.0);
+          _seg(body, x, wy, x + cw, wy);
+          _seg(highlight, x, wy, x + cw, wy, dx: -0.8, dy: -0.8);
         }
       }
     }
