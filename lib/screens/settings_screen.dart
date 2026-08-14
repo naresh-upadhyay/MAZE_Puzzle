@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../models/game_state.dart';
 import '../theme/app_theme.dart';
+import '../widgets/math_graph_background.dart';
 
 class SettingsScreen extends StatelessWidget {
   final VoidCallback onBack;
@@ -14,10 +15,11 @@ class SettingsScreen extends StatelessWidget {
     final state = Provider.of<GameState>(context);
 
     return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
+      body: MathGraphBackground(
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
             children: [
               // Header
               Row(
@@ -160,8 +162,9 @@ class SettingsScreen extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 class _SettingToggleRow extends StatelessWidget {

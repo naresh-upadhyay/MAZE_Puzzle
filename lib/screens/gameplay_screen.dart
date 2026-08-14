@@ -437,38 +437,40 @@ class _GameplayScreenState extends State<GameplayScreen>
 
   // ── Controls ──────────────────────────────────────────────────────────────
   Widget _buildControls(GameState state) {
+    final remainingHints = state.dailyHintsRemaining;
+
     return Row(
       children: [
         Expanded(
           child: _ControlBtn(
-            icon: Icons.undo_rounded,
-            label: 'UNDO',
-            onTap: () {
-              if (state.undoCount > 0) {
-                state.useUndo();
-                _flameGame.undoStep();
-              }
-            },
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _ControlBtn(
             icon: Icons.lightbulb_outline_rounded,
-            iconColor: AppTheme.accentGold,
+            iconColor: remainingHints > 0 ? AppTheme.accentGold : AppTheme.textMuted,
             label: 'HINT',
-            badge: '×${state.hintCount}',
-            badgeColor: AppTheme.accentGold,
+            badge: '$remainingHints/2',
+            badgeColor: remainingHints > 0 ? AppTheme.accentGold : Colors.grey,
             onTap: () {
-              if (state.hintCount > 0) {
-                state.useHint();
+              if (remainingHints > 0) {
+                if (state.useHint()) {
+                  _hintUsed = true;
+                  _flameGame.showHint();
+                }
+              } else {
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    backgroundColor: const Color(0xFF161B3D),
+                    content: Text(
+                      'Daily hint limit reached (2/2). Reset tomorrow!',
+                      style: GoogleFonts.orbitron(fontSize: 11, color: AppTheme.accentGold),
+                    ),
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
               }
-              _hintUsed = true;
-              _flameGame.showHint();
             },
           ),
         ),
-        const SizedBox(width: 10),
+        const SizedBox(width: 12),
         Expanded(
           child: _ControlBtn(
             icon: Icons.refresh_rounded,

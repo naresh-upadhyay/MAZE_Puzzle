@@ -132,8 +132,8 @@ class _HowToPlayScreenState extends State<HowToPlayScreen>
                           // ── 3 Instruction Steps ─────────────────────────────
                           _buildInstructionCard(
                             stepNum: '01',
-                            title: 'TOUCH START & DRAG',
-                            desc: 'Touch the green START node to initiate the beam, then drag your finger through open corridors.',
+                            title: 'ENTER VIA ENTRY GATE',
+                            desc: 'Touch the green ENTRY GATE to initiate the beam, then enter through the outer boundary gate into the maze.',
                             icon: Icons.touch_app_rounded,
                             iconColor: AppTheme.primaryGlow,
                           ),
@@ -141,15 +141,15 @@ class _HowToPlayScreenState extends State<HowToPlayScreen>
                           _buildInstructionCard(
                             stepNum: '02',
                             title: 'TRACE NEON PATH',
-                            desc: 'A 4-layer glowing neon beam follows your finger smoothly. Avoid touching the thick navy walls!',
+                            desc: 'A 4-layer glowing neon beam follows your finger smoothly through the 5 complex winding routes.',
                             icon: Icons.auto_awesome_rounded,
                             iconColor: AppTheme.accentGold,
                           ),
                           const SizedBox(height: 12),
                           _buildInstructionCard(
                             stepNum: '03',
-                            title: 'REACH THE EXIT PORTAL',
-                            desc: 'Navigate through the maze to reach the magenta EXIT node to complete the level and claim 3 stars!',
+                            title: 'REACH THE EXIT GATE',
+                            desc: 'Navigate through the maze to exit via the magenta EXIT GATE on the top boundary wall to claim 3 stars!',
                             icon: Icons.flag_circle_rounded,
                             iconColor: AppTheme.accentPink,
                           ),
@@ -344,7 +344,7 @@ class _HowToPlayScreenState extends State<HowToPlayScreen>
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              'PRO TIP: Hitting a wall causes a short red flash without resetting progress. Use UNDO or HINT if you get stuck!',
+              'PRO TIP: Hitting a wall causes a short red flash without resetting progress. Use HINT if you get stuck!',
               style: GoogleFonts.outfit(
                 fontSize: 11,
                 color: Colors.white70,
@@ -451,27 +451,27 @@ class _MiniMazeDemoPainter extends CustomPainter {
     canvas.drawPath(wallPath, wallBody);
     canvas.drawPath(wallPath, wallHighlight);
 
-    // 3. START Node (top-left 0,0)
-    final startCenter = Offset(cw / 2, ch / 2);
+    // 3. START Node (bottom-right 3,2)
+    final startCenter = Offset(cw * 3.5, ch * 2.5);
     final startPaint = Paint()..color = const Color(0xFF00FF9D);
     canvas.drawCircle(startCenter, 10, startPaint..color = const Color(0xFF00FF9D).withValues(alpha: 0.3));
     canvas.drawCircle(startCenter, 6, startPaint..color = const Color(0xFF00FF9D));
 
-    // 4. EXIT Node (bottom-right 3,2)
-    final exitCenter = Offset(cw * 3.5, ch * 2.5);
+    // 4. EXIT Node (top-left 0,0)
+    final exitCenter = Offset(cw / 2, ch / 2);
     final exitPaint = Paint()..color = const Color(0xFFFF2A6D);
     canvas.drawCircle(exitCenter, 11, exitPaint..color = const Color(0xFFFF2A6D).withValues(alpha: 0.3));
     canvas.drawCircle(exitCenter, 7, exitPaint..color = const Color(0xFFFF2A6D));
 
-    // 5. Solution Waypoints Path
+    // 5. Solution Waypoints Path (Bottom to Top)
     final points = [
-      Offset(cw / 2, ch / 2),
-      Offset(cw / 2, ch * 2.5),
-      Offset(cw * 1.5, ch * 2.5),
-      Offset(cw * 1.5, ch / 2),
-      Offset(cw * 2.5, ch / 2),
-      Offset(cw * 2.5, ch * 2.5),
       Offset(cw * 3.5, ch * 2.5),
+      Offset(cw * 2.5, ch * 2.5),
+      Offset(cw * 2.5, ch / 2),
+      Offset(cw * 1.5, ch / 2),
+      Offset(cw * 1.5, ch * 2.5),
+      Offset(cw / 2, ch * 2.5),
+      Offset(cw / 2, ch / 2),
     ];
 
     // Compute animated current position along path

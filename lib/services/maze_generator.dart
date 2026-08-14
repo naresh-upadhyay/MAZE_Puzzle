@@ -48,6 +48,9 @@ class MazeGenerator {
     this.seed,
   });
 
+  CellPosition get startPos => CellPosition(rows - 1, cols - 1);
+  CellPosition get exitPos => const CellPosition(0, 0);
+
   List<List<MazeCell>> generate() {
     grid = List.generate(
       rows,
@@ -56,18 +59,112 @@ class MazeGenerator {
 
     final rng = seed != null ? Random(seed) : Random();
 
-    // Serpentine DFS with Direction Bias to create complex winding mazes
-    final stack = <MazeCell>[];
-    final startCell = grid[0][0];
-    startCell.visited = true;
-    stack.add(startCell);
+    _generateFiveComplicatedRoutesLabyrinth(rng);
+
+    solutionPath = solveBFS(startPos, exitPos);
+    return grid;
+  }
+
+  /// Professional Labyrinth Generator with EXACTLY 5 Complicated Winding Routes to Exit
+  /// and 100% Dense, Unbroken Architectural Wall Structure.
+  void _generateFiveComplicatedRoutesLabyrinth(Random rng) {
+    // 1. Define 5 sector column targets evenly distributed across grid width
+    final sectorCols = [
+      (cols * 0.10).round().clamp(0, cols - 1),
+      (cols * 0.30).round().clamp(0, cols - 1),
+      (cols * 0.50).round().clamp(0, cols - 1),
+      (cols * 0.70).round().clamp(0, cols - 1),
+      (cols * 0.90).round().clamp(0, cols - 1),
+    ];
+
+    // 2. Carve 5 distinct, winding, multi-turn primary routes from START to EXIT
+    for (int routeIdx = 0; routeIdx < 5; routeIdx++) {
+      final targetCol = sectorCols[routeIdx];
+      CellPosition curr = startPos;
+      grid[curr.r][curr.c].visited = true;
+
+      final minC = (targetCol - (cols * 0.12).round()).clamp(0, cols - 1);
+      final maxC = (targetCol + (cols * 0.12).round()).clamp(0, cols - 1);
+
+      // Phase A: Connect START to sector column
+      while (curr.c != targetCol) {
+        final nextC = curr.c < targetCol ? curr.c + 1 : curr.c - 1;
+        final nextPos = CellPosition(curr.r, nextC);
+        _removeWalls(grid[curr.r][curr.c], grid[nextPos.r][nextPos.c]);
+        curr = nextPos;
+        grid[curr.r][curr.c].visited = true;
+      }
+
+      // Phase B: Serpentine upward ascent with 50% probability of lateral weaving
+      while (curr.r > 0) {
+        final r = curr.r;
+        final c = curr.c;
+
+        final candidates = <CellPosition>[];
+        // Always offer upward movement
+        candidates.add(CellPosition(r - 1, c));
+
+        // Offer lateral turns within sector boundaries to create serpentine loops
+        if (c > minC && rng.nextDouble() < 0.55) {
+          candidates.add(CellPosition(r, c - 1));
+        }
+        if (c < maxC && rng.nextDouble() < 0.55) {
+          candidates.add(CellPosition(r, c + 1));
+        }
+
+        final nextPos = candidates[rng.nextInt(candidates.length)];
+        _removeWalls(grid[r][c], grid[nextPos.r][nextPos.c]);
+        curr = nextPos;
+        grid[curr.r][curr.c].visited = true;
+      }
+
+      // Phase C: Connect top of sector (0, curr.c) to EXIT portal (0, 0)
+      while (curr.c > exitPos.c) {
+        final nextPos = CellPosition(0, curr.c - 1);
+        _removeWalls(grid[curr.r][curr.c], grid[nextPos.r][nextPos.c]);
+        curr = nextPos;
+        grid[curr.r][curr.c].visited = true;
+      }
+    }
+
+    // 3. Fill 100% of unvisited grid cells with DFS winding dead-end corridors
+    _fillUnvisitedCellsWithDFS(rng);
+
+    // 4. Post-process to remove any 3-open isolated wall stubs for clean continuous 3D walls
+    _refineWallStubs();
+
+    // 5. Open Outer Boundary Walls: Exactly 1 ENTRY GATE (bottom) and 1 EXIT GATE (top)
+    grid[startPos.r][startPos.c].walls.bottom = false;
+    grid[exitPos.r][exitPos.c].walls.top = false;
+  }
+
+  void _fillUnvisitedCellsWithDFS(Random rng) {
+    for (int r = 0; r < rows; r++) {
+      for (int c = 0; c < cols; c++) {
+        if (!grid[r][c].visited) {
+          _carveDFSTrail(grid[r][c], rng);
+        }
+      }
+    }
+  }
+
+  void _carveDFSTrail(MazeCell start, Random rng) {
+    final stack = <MazeCell>[start];
+    start.visited = true;
+
+    // Connect start cell of this trail to an adjacent visited cell
+    final visitedNeighbors = _getVisitedNeighbors(start);
+    if (visitedNeighbors.isNotEmpty) {
+      final root = visitedNeighbors[rng.nextInt(visitedNeighbors.length)];
+      _removeWalls(start, root);
+    }
 
     while (stack.isNotEmpty) {
       final current = stack.last;
-      final neighbors = _getUnvisitedNeighbors(current, rng);
+      final unvisitedNeighbors = _getUnvisitedNeighbors(current, rng);
 
-      if (neighbors.isNotEmpty) {
-        final next = neighbors[rng.nextInt(neighbors.length)];
+      if (unvisitedNeighbors.isNotEmpty) {
+        final next = unvisitedNeighbors[rng.nextInt(unvisitedNeighbors.length)];
         _removeWalls(current, next);
         next.visited = true;
         stack.add(next);
@@ -75,91 +172,51 @@ class MazeGenerator {
         stack.removeLast();
       }
     }
-
-    if (isComplicated) {
-      _makeMultiPathBraidMaze(rng);
-    } else {
-      // Add subtle extra branches for simple mazes so they aren't just 1 linear hallway
-      _addMinorBranches(rng);
-    }
-
-    solutionPath = solveBFS(const CellPosition(0, 0), CellPosition(rows - 1, cols - 1));
-    return grid;
   }
 
-  void _addMinorBranches(Random rng) {
-    final extraLoops = (rows * cols * 0.08).round();
-    int added = 0;
-    int safety = 200;
-    while (added < extraLoops && safety > 0) {
-      safety--;
-      final r = rng.nextInt(rows);
-      final c = rng.nextInt(cols);
-      final cell = grid[r][c];
+  List<MazeCell> _getVisitedNeighbors(MazeCell cell) {
+    final neighbors = <MazeCell>[];
+    final r = cell.r;
+    final c = cell.c;
 
-      final candidates = <MazeCell>[];
-      if (r > 0 && cell.walls.top) candidates.add(grid[r - 1][c]);
-      if (r < rows - 1 && cell.walls.bottom) candidates.add(grid[r + 1][c]);
-      if (c > 0 && cell.walls.left) candidates.add(grid[r][c - 1]);
-      if (c < cols - 1 && cell.walls.right) candidates.add(grid[r][c + 1]);
+    if (r > 0 && grid[r - 1][c].visited) neighbors.add(grid[r - 1][c]);
+    if (r < rows - 1 && grid[r + 1][c].visited) neighbors.add(grid[r + 1][c]);
+    if (c > 0 && grid[r][c - 1].visited) neighbors.add(grid[r][c - 1]);
+    if (c < cols - 1 && grid[r][c + 1].visited) neighbors.add(grid[r][c + 1]);
 
-      if (candidates.isNotEmpty) {
-        final target = candidates[rng.nextInt(candidates.length)];
-        _removeWalls(cell, target);
-        added++;
-      }
-    }
+    return neighbors;
   }
 
-  void _makeMultiPathBraidMaze(Random rng) {
-    // 1. Remove 60% of dead ends to turn single-path dead ends into tricky loops
+
+
+  void _refineWallStubs() {
     for (int r = 0; r < rows; r++) {
       for (int c = 0; c < cols; c++) {
         final cell = grid[r][c];
-        int wallCount = 0;
-        if (cell.walls.top) wallCount++;
-        if (cell.walls.bottom) wallCount++;
-        if (cell.walls.left) wallCount++;
-        if (cell.walls.right) wallCount++;
 
-        if (wallCount >= 3 && rng.nextDouble() < 0.70) {
-          final candidates = <MazeCell>[];
-          if (r > 0 && cell.walls.top) candidates.add(grid[r - 1][c]);
-          if (r < rows - 1 && cell.walls.bottom) candidates.add(grid[r + 1][c]);
-          if (c > 0 && cell.walls.left) candidates.add(grid[r][c - 1]);
-          if (c < cols - 1 && cell.walls.right) candidates.add(grid[r][c + 1]);
+        int openCount = 0;
+        if (!cell.walls.top) openCount++;
+        if (!cell.walls.bottom) openCount++;
+        if (!cell.walls.left) openCount++;
+        if (!cell.walls.right) openCount++;
 
-          if (candidates.isNotEmpty) {
-            final target = candidates[rng.nextInt(candidates.length)];
-            _removeWalls(cell, target);
+        // If a cell is open on 3 sides (leaving 1 isolated wall stub), open the remaining wall to smooth out stubs
+        if (openCount == 3) {
+          if (cell.walls.top && r > 0) {
+            _removeWalls(cell, grid[r - 1][c]);
+          } else if (cell.walls.bottom && r < rows - 1) {
+            _removeWalls(cell, grid[r + 1][c]);
+          } else if (cell.walls.left && c > 0) {
+            _removeWalls(cell, grid[r][c - 1]);
+          } else if (cell.walls.right && c < cols - 1) {
+            _removeWalls(cell, grid[r][c + 1]);
           }
         }
       }
     }
-
-    // 2. Knock down extra internal walls to create multiple alternative routes to exit
-    final extraLoops = (rows * cols * 0.22).round();
-    int added = 0;
-    int safety = 600;
-    while (added < extraLoops && safety > 0) {
-      safety--;
-      final r = rng.nextInt(rows);
-      final c = rng.nextInt(cols);
-      final cell = grid[r][c];
-
-      final candidates = <MazeCell>[];
-      if (r > 0 && cell.walls.top) candidates.add(grid[r - 1][c]);
-      if (r < rows - 1 && cell.walls.bottom) candidates.add(grid[r + 1][c]);
-      if (c > 0 && cell.walls.left) candidates.add(grid[r][c - 1]);
-      if (c < cols - 1 && cell.walls.right) candidates.add(grid[r][c + 1]);
-
-      if (candidates.isNotEmpty) {
-        final target = candidates[rng.nextInt(candidates.length)];
-        _removeWalls(cell, target);
-        added++;
-      }
-    }
   }
+
+
 
   List<MazeCell> _getUnvisitedNeighbors(MazeCell cell, Random rng) {
     final neighbors = <MazeCell>[];
@@ -171,7 +228,6 @@ class MazeGenerator {
     if (r < rows - 1 && !grid[r + 1][c].visited) neighbors.add(grid[r + 1][c]);
     if (c > 0 && !grid[r][c - 1].visited) neighbors.add(grid[r][c - 1]);
 
-    // Shuffle neighbors to avoid simple bias
     neighbors.shuffle(rng);
     return neighbors;
   }

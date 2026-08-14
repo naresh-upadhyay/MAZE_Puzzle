@@ -68,8 +68,24 @@ class GameState extends ChangeNotifier {
 
   List<String> unlockedThemes = ['neon'];
   List<String> claimedAchievements = ['first_steps'];
-  int undoCount = 3;
-  int hintCount = 3;
+
+  // Daily Hints System (Max 2 per day)
+  String lastHintDate = '';
+  int dailyHintsUsed = 0;
+  static const int maxDailyHints = 2;
+
+  void _checkDailyHintReset() {
+    final todayStr = DateTime.now().toIso8601String().split('T')[0];
+    if (lastHintDate != todayStr) {
+      lastHintDate = todayStr;
+      dailyHintsUsed = 0;
+    }
+  }
+
+  int get dailyHintsRemaining {
+    _checkDailyHintReset();
+    return (maxDailyHints - dailyHintsUsed).clamp(0, maxDailyHints);
+  }
 
   // Settings
   bool soundEnabled = true;
@@ -110,8 +126,8 @@ class GameState extends ChangeNotifier {
       selectedMode = prefs.getString('selectedMode') ?? selectedMode;
       equippedTheme = prefs.getString('equippedTheme') ?? equippedTheme;
       equippedTrail = prefs.getString('equippedTrail') ?? equippedTrail;
-      undoCount = prefs.getInt('undoCount') ?? undoCount;
-      hintCount = prefs.getInt('hintCount') ?? hintCount;
+      lastHintDate = prefs.getString('lastHintDate') ?? '';
+      dailyHintsUsed = prefs.getInt('dailyHintsUsed') ?? 0;
 
       soundEnabled = prefs.getBool('soundEnabled') ?? soundEnabled;
       musicEnabled = prefs.getBool('musicEnabled') ?? musicEnabled;
@@ -165,8 +181,8 @@ class GameState extends ChangeNotifier {
       await prefs.setString('selectedMode', selectedMode);
       await prefs.setString('equippedTheme', equippedTheme);
       await prefs.setString('equippedTrail', equippedTrail);
-      await prefs.setInt('undoCount', undoCount);
-      await prefs.setInt('hintCount', hintCount);
+      await prefs.setString('lastHintDate', lastHintDate);
+      await prefs.setInt('dailyHintsUsed', dailyHintsUsed);
 
       await prefs.setBool('soundEnabled', soundEnabled);
       await prefs.setBool('musicEnabled', musicEnabled);
@@ -221,19 +237,10 @@ class GameState extends ChangeNotifier {
     _savePrefs();
   }
 
-  bool useUndo() {
-    if (undoCount > 0) {
-      undoCount--;
-      notifyListeners();
-      _savePrefs();
-      return true;
-    }
-    return false;
-  }
-
   bool useHint() {
-    if (hintCount > 0) {
-      hintCount--;
+    _checkDailyHintReset();
+    if (dailyHintsUsed < maxDailyHints) {
+      dailyHintsUsed++;
       notifyListeners();
       _savePrefs();
       return true;

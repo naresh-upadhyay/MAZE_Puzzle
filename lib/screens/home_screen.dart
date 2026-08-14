@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../models/game_state.dart';
 import '../theme/app_theme.dart';
+import '../widgets/math_graph_background.dart';
 import '../widgets/top_currency_header.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -18,9 +19,10 @@ class HomeScreen extends StatelessWidget {
       appBar: TopCurrencyHeader(
         onSettingsPressed: () => onNavigate('/settings'),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
+      body: MathGraphBackground(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
           children: [
             // Title Header
             Column(
@@ -212,8 +214,9 @@ class HomeScreen extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 class _MenuCard extends StatelessWidget {
