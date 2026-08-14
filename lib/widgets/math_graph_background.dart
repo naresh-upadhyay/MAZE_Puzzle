@@ -668,6 +668,14 @@ class _AestheticMathPainter extends CustomPainter {
       final floatX = math.cos((progress * 2 * math.pi * speed * 0.7) + i) * 5.0;
       final opacity = 0.35 + math.sin((progress * 2 * math.pi * 0.5) + i * 1.5) * 0.20;
 
+      final drawX = basePos.dx + floatX;
+      final drawY = basePos.dy + floatY;
+
+      // Skip formula text if positioned in or near the TAP TO START button zone
+      if (drawY >= h * 0.45 && drawY <= h * 0.78 && drawX >= w * 0.05 && drawX <= w * 0.95) {
+        continue;
+      }
+
       textPainter.text = TextSpan(
         text: text,
         style: GoogleFonts.outfit(
@@ -686,7 +694,7 @@ class _AestheticMathPainter extends CustomPainter {
       textPainter.layout();
       textPainter.paint(
         canvas,
-        Offset(basePos.dx + floatX, basePos.dy + floatY),
+        Offset(drawX, drawY),
       );
     }
   }

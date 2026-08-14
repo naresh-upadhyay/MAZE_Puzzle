@@ -346,12 +346,15 @@ class _SplashScreenState extends State<SplashScreen>
         // Breathing glow parameters
         final glowAlpha = 0.55 + math.sin(loopVal * 2 * math.pi) * 0.35;
 
-        return Transform.translate(
-          offset: Offset(0, hoverY),
-          child: Stack(
-            alignment: Alignment.center,
-            clipBehavior: Clip.none,
-            children: [
+        return SizedBox(
+          width: 220,
+          height: 220,
+          child: Transform.translate(
+            offset: Offset(0, hoverY),
+            child: Stack(
+              alignment: Alignment.center,
+              clipBehavior: Clip.none,
+              children: [
               // 1. Expanding Radiant Shockwave Ring
               Opacity(
                 opacity: (1.0 - shockVal) * 0.65,
@@ -440,9 +443,10 @@ class _SplashScreenState extends State<SplashScreen>
               ),
             ],
           ),
-        );
-      },
-    );
+        ),
+      );
+    },
+  );
   }
 
   // ── Title & Animated Laser Typography ────────────────────────────────────
