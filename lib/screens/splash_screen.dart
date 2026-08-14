@@ -12,7 +12,7 @@ import '../widgets/math_graph_background.dart';
 /// - Continuous chromatic neon border rotation and floating 3D hover on hero logo
 /// - Expanding periodic radiant shockwave rings
 /// - Dynamic laser shimmer gradient sweep across "GLOW PATH" title
-/// - Ultra-premium glowing "TAP TO START" button with specular sheen sweep
+/// - Ultra-premium glowing "TAP TO START" button
 /// - Top currency indicators (Energy, Coins, Gems) & settings
 /// - Glassmorphic bottom navigation deck with interactive micro-animations
 /// - Interactive touch ripples & neon spark physics
