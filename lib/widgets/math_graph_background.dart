@@ -66,6 +66,21 @@ class _MathGraphBackgroundState extends State<MathGraphBackground>
   void _handleTouch(Offset localPos) {
     if (!widget.enableInteractiveSparks) return;
 
+    // Ignore touches over the TAP TO START button zone to keep the button completely static
+    final mediaQuery = MediaQuery.maybeOf(context);
+    final size = mediaQuery?.size ?? const Size(360, 640);
+    final buttonYMin = size.height * 0.58;
+    final buttonYMax = size.height * 0.74;
+    final buttonXMin = size.width * 0.12;
+    final buttonXMax = size.width * 0.88;
+
+    if (localPos.dy >= buttonYMin &&
+        localPos.dy <= buttonYMax &&
+        localPos.dx >= buttonXMin &&
+        localPos.dx <= buttonXMax) {
+      return;
+    }
+
     final glowColor = widget.primaryGlowColor ?? AppTheme.primaryGlow;
     final colors = [
       glowColor,
@@ -688,6 +703,11 @@ class _AestheticMathPainter extends CustomPainter {
       final wobble = math.sin((progress * 2 * math.pi * speed) + i * 1.2) * 12.0;
       final px = (seedX * w) + wobble;
       final py = currentY * h;
+
+      // Don't draw embers over the TAP TO START button zone
+      if (py >= h * 0.58 && py <= h * 0.74 && px >= w * 0.12 && px <= w * 0.88) {
+        continue;
+      }
 
       final radius = depth == 1 ? 1.5 : (depth == 2 ? 2.5 : 3.8);
       final alpha = depth == 1 ? 0.18 : (depth == 2 ? 0.40 : 0.75);
