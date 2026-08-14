@@ -572,7 +572,7 @@ class _AestheticMathPainter extends CustomPainter {
 
     // ── 2. Fourier Square Wave Harmonic Series Approximation ───────────────
     final wavePath2 = Path();
-    final waveY2 = h * 0.60;
+    final waveY2 = h * 0.76;
     wavePath2.moveTo(0, waveY2);
 
     for (double x = 0; x <= w; x += 4) {
