@@ -23,17 +23,18 @@ class _GameplayScreenState extends State<GameplayScreen>
   late MazeGenerator _generator;
   late MazeFlameGame _flameGame;
 
-  // ── Dual-puzzle state ──────────────────────────────────────────────────────
-  int  _currentPuzzleIndex = 1;
-  bool _showPhaseOverlay   = false;
-  bool _isPaused           = false;
+  // ── 5-Puzzle Level State ──────────────────────────────────────────────────
+  int _currentPuzzleIndex = 1;
+  static const int _totalPuzzles = 5;
+  bool _showPhaseOverlay = false;
+  bool _isPaused = false;
 
   // ── Timer & stats ──────────────────────────────────────────────────────────
-  int    _moves         = 0;
-  int    _seconds       = 0;
+  int _moves = 0;
+  int _seconds = 0;
   Timer? _timer;
-  bool   _hintUsed      = false;
-  int    _totalMistakes = 0;
+  bool _hintUsed = false;
+  int _totalMistakes = 0;
 
   // ── Wrong-path toast ───────────────────────────────────────────────────────
   bool _showWrongTurn = false;
@@ -41,8 +42,6 @@ class _GameplayScreenState extends State<GameplayScreen>
 
   // ── Progress ───────────────────────────────────────────────────────────────
   double _progress = 0.0;
-
-  // ── Progress bar animation ─────────────────────────────────────────────────
   late AnimationController _progressBarAnim;
 
   @override
@@ -64,38 +63,86 @@ class _GameplayScreenState extends State<GameplayScreen>
     _startTimer();
   }
 
+  Color _getPuzzleColor(int puzzleIdx, String equippedTheme) {
+    switch (puzzleIdx) {
+      case 1:
+        return AppTheme.themeColors[equippedTheme] ?? AppTheme.primaryGlow;
+      case 2:
+        return const Color(0xFF00FFD0); // Neon Turquoise
+      case 3:
+        return const Color(0xFFFFB800); // Radiant Gold
+      case 4:
+        return AppTheme.accentPink; // Cyber Pink
+      case 5:
+      default:
+        return const Color(0xFFFF3060); // Crimson Neon
+    }
+  }
+
+  String _getPuzzleDifficultyName(int puzzleIdx) {
+    switch (puzzleIdx) {
+      case 1:
+        return 'EASY (9×9)';
+      case 2:
+        return 'EASY+ (9×9)';
+      case 3:
+        return 'MEDIUM (11×11)';
+      case 4:
+        return 'MEDIUM+ (13×13)';
+      case 5:
+      default:
+        return 'HARD (15×15)';
+    }
+  }
+
   void _loadPuzzle(int puzzleIndex) {
     final state = Provider.of<GameState>(context, listen: false);
 
-    final level = state.currentLevel;
-    final isComplicated = puzzleIndex == 2;
-    final cols = isComplicated
-        ? (14 + (level * 0.08).floor()).clamp(14, 18)
-        : (10 + (level * 0.05).floor()).clamp(10, 12);
+    // 5 Progressive Grid Tiers (Capped at 15x15 for mobile touch comfort)
+    int cols;
+    switch (puzzleIndex) {
+      case 1:
+        cols = 9;
+        break;
+      case 2:
+        cols = 9;
+        break;
+      case 3:
+        cols = 11;
+        break;
+      case 4:
+        cols = 13;
+        break;
+      case 5:
+      default:
+        cols = 15;
+        break;
+    }
     final rows = cols;
 
-    final levelSeed = state.currentLevel * 100 + puzzleIndex;
+    final levelSeed = state.currentLevel * 1000 + puzzleIndex;
 
     _generator = MazeGenerator(
       cols: cols,
       rows: rows,
-      isComplicated: isComplicated,
+      puzzleIndex: puzzleIndex,
       seed: levelSeed,
     );
     _generator.generate();
 
-    final equippedColor = AppTheme.themeColors[state.equippedTheme] ?? AppTheme.primaryGlow;
-    final themeColor = isComplicated ? AppTheme.accentPink : equippedColor;
+    final themeColor = _getPuzzleColor(puzzleIndex, state.equippedTheme);
 
     _flameGame = MazeFlameGame(
       generator: _generator,
       themeColor: themeColor,
       onWin: _handlePuzzleWin,
       onMove: (moveCount) {
-        setState(() {
-          _moves    = moveCount;
-          _progress = _flameGame.progressPercent;
-        });
+        if (mounted) {
+          setState(() {
+            _moves = moveCount;
+            _progress = _flameGame.progressPercent;
+          });
+        }
       },
       onWrongPath: _handleWrongPath,
     );
@@ -115,32 +162,32 @@ class _GameplayScreenState extends State<GameplayScreen>
   void _handlePuzzleWin() {
     _totalMistakes += _flameGame.mistakeCount;
 
-    if (_currentPuzzleIndex == 1) {
+    if (_currentPuzzleIndex < _totalPuzzles) {
       setState(() => _showPhaseOverlay = true);
-      Future.delayed(const Duration(milliseconds: 1600), () {
+      Future.delayed(const Duration(milliseconds: 1400), () {
         if (!mounted) return;
         setState(() {
-          _currentPuzzleIndex = 2;
-          _showPhaseOverlay   = false;
-          _moves              = 0;
-          _progress           = 0.0;
+          _currentPuzzleIndex++;
+          _showPhaseOverlay = false;
+          _moves = 0;
+          _progress = 0.0;
         });
-        _loadPuzzle(2);
+        _loadPuzzle(_currentPuzzleIndex);
       });
     } else {
-      // Both puzzles cleared — wait 900ms for win animation then report
+      // All 5 puzzles cleared — wait 900ms for victory wave celebration then report
       Future.delayed(const Duration(milliseconds: 950), () {
         if (!mounted) return;
         _stopTimer();
         final state = Provider.of<GameState>(context, listen: false);
 
         int stars = 3;
-        if (_seconds > 45 || _hintUsed || _totalMistakes > 3) stars = 2;
-        if (_seconds > 90 || _totalMistakes > 7) stars = 1;
+        if (_seconds > 120 || _hintUsed || _totalMistakes > 5) stars = 2;
+        if (_seconds > 240 || _totalMistakes > 12) stars = 1;
 
-        final coinsEarned = stars * 30;
-        final gemsEarned  = stars > 2 ? 4 : 2;
-        final isPerfect   = stars == 3 && !_hintUsed && _totalMistakes == 0;
+        final coinsEarned = stars * 50;
+        final gemsEarned = stars > 2 ? 5 : 2;
+        final isPerfect = stars == 3 && !_hintUsed && _totalMistakes == 0;
 
         state.saveLevelResult(
           'simple',
@@ -195,9 +242,8 @@ class _GameplayScreenState extends State<GameplayScreen>
 
   @override
   Widget build(BuildContext context) {
-    final state      = Provider.of<GameState>(context);
-    final isP2       = _currentPuzzleIndex == 2;
-    final puzzleColor = isP2 ? AppTheme.accentPink : AppTheme.primaryGlow;
+    final state = Provider.of<GameState>(context);
+    final puzzleColor = _getPuzzleColor(_currentPuzzleIndex, state.equippedTheme);
 
     return Scaffold(
       backgroundColor: AppTheme.bgDark,
@@ -212,11 +258,11 @@ class _GameplayScreenState extends State<GameplayScreen>
                   _buildHUD(state, puzzleColor),
                   const SizedBox(height: 6),
 
-                  // ── PATH PROGRESS bar ──────────────────────────────────────────
-                  _buildProgressBar(puzzleColor),
+                  // ── 5-Puzzle Segments & PATH PROGRESS bar ──────────────────────
+                  _build5PuzzleProgressBar(puzzleColor),
                   const SizedBox(height: 8),
 
-                  // ── Maze Canvas ────────────────────────────────────────────────
+                  // ── Maze Canvas (Physical Corridor Navigation Area) ────────────
                   Expanded(child: _buildMazeArea(puzzleColor)),
                   const SizedBox(height: 10),
 
@@ -259,12 +305,12 @@ class _GameplayScreenState extends State<GameplayScreen>
                 ),
               ),
               Text(
-                'PUZZLE $_currentPuzzleIndex / 2',
+                'PUZZLE $_currentPuzzleIndex / $_totalPuzzles  •  ${_getPuzzleDifficultyName(_currentPuzzleIndex)}',
                 style: GoogleFonts.orbitron(
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
                   color: puzzleColor,
-                  letterSpacing: 2,
+                  letterSpacing: 1.5,
                 ),
               ),
               const SizedBox(height: 3),
@@ -311,34 +357,69 @@ class _GameplayScreenState extends State<GameplayScreen>
     );
   }
 
-  // ── Progress bar ──────────────────────────────────────────────────────────
-  Widget _buildProgressBar(Color color) {
-    return Row(
+  // ── 5-Puzzle Progress Bar with 5 Segments ──────────────────────────────────
+  Widget _build5PuzzleProgressBar(Color color) {
+    return Column(
       children: [
-        Text('PATH',
-            style: GoogleFonts.outfit(
-                fontSize: 9, color: AppTheme.textMuted, letterSpacing: 1)),
-        const SizedBox(width: 6),
-        Expanded(
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: _progress,
-              minHeight: 4,
-              backgroundColor: Colors.white.withValues(alpha: 0.06),
-              valueColor: AlwaysStoppedAnimation<Color>(color),
-            ),
-          ),
+        // 5-Segment Pills
+        Row(
+          children: List.generate(_totalPuzzles, (idx) {
+            final pNum = idx + 1;
+            final isDone = pNum < _currentPuzzleIndex;
+            final isCurrent = pNum == _currentPuzzleIndex;
+
+            return Expanded(
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 2),
+                height: 4,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(2),
+                  color: isDone
+                      ? const Color(0xFF00FF9D)
+                      : (isCurrent ? color : Colors.white.withValues(alpha: 0.10)),
+                  boxShadow: isCurrent
+                      ? [
+                          BoxShadow(
+                            color: color.withValues(alpha: 0.6),
+                            blurRadius: 6,
+                            spreadRadius: 1,
+                          )
+                        ]
+                      : null,
+                ),
+              ),
+            );
+          }),
         ),
-        const SizedBox(width: 6),
-        Text('${(_progress * 100).round()}%',
-            style: GoogleFonts.orbitron(
-                fontSize: 9, color: AppTheme.textMuted)),
+        const SizedBox(height: 5),
+        Row(
+          children: [
+            Text('PATH',
+                style: GoogleFonts.outfit(
+                    fontSize: 9, color: AppTheme.textMuted, letterSpacing: 1)),
+            const SizedBox(width: 6),
+            Expanded(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: _progress,
+                  minHeight: 3.5,
+                  backgroundColor: Colors.white.withValues(alpha: 0.06),
+                  valueColor: AlwaysStoppedAnimation<Color>(color),
+                ),
+              ),
+            ),
+            const SizedBox(width: 6),
+            Text('${(_progress * 100).round()}%',
+                style: GoogleFonts.orbitron(
+                    fontSize: 9, color: AppTheme.textMuted)),
+          ],
+        ),
       ],
     );
   }
 
-  // ── Maze area with overlays ───────────────────────────────────────────────
+  // ── Maze Area (Physical Game Canvas) ───────────────────────────────────────
   Widget _buildMazeArea(Color puzzleColor) {
     return Container(
       decoration: BoxDecoration(
@@ -394,7 +475,7 @@ class _GameplayScreenState extends State<GameplayScreen>
                         const Icon(Icons.block_rounded, size: 14, color: Colors.white),
                         const SizedBox(width: 6),
                         Text(
-                          'WRONG TURN',
+                          'WALL / DEAD END',
                           style: GoogleFonts.orbitron(
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
@@ -408,7 +489,7 @@ class _GameplayScreenState extends State<GameplayScreen>
               ),
             ),
 
-          // Puzzle 1 cleared transition overlay
+          // Interstitial Puzzle Cleared Transition Overlay
           if (_showPhaseOverlay)
             Container(
               decoration: BoxDecoration(
@@ -420,30 +501,32 @@ class _GameplayScreenState extends State<GameplayScreen>
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     const Icon(Icons.check_circle_outline_rounded,
-                        size: 64, color: AppTheme.primaryGlow),
+                        size: 64, color: Color(0xFF00FF9D)),
                     const SizedBox(height: 14),
                     Text(
-                      'PUZZLE 1 CLEARED!',
+                      'PUZZLE $_currentPuzzleIndex CLEARED!',
                       style: GoogleFonts.orbitron(
-                        fontSize: 22,
+                        fontSize: 20,
                         fontWeight: FontWeight.w900,
-                        color: AppTheme.primaryGlow,
+                        color: const Color(0xFF00FF9D),
                         letterSpacing: 2,
                       ),
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'PUZZLE 2  —  MULTI-PATH MAZE',
+                      'NEXT: PUZZLE ${_currentPuzzleIndex + 1} / $_totalPuzzles',
                       style: GoogleFonts.orbitron(
-                          fontSize: 12,
+                          fontSize: 13,
                           fontWeight: FontWeight.bold,
-                          color: AppTheme.accentPink),
+                          color: Colors.white),
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'Multiple routes — find the EXIT',
-                      style: GoogleFonts.outfit(
-                          fontSize: 11, color: AppTheme.textMuted),
+                      _getPuzzleDifficultyName(_currentPuzzleIndex + 1),
+                      style: GoogleFonts.orbitron(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: _getPuzzleColor(_currentPuzzleIndex + 1, 'neon')),
                     ),
                   ],
                 ),
@@ -497,7 +580,7 @@ class _GameplayScreenState extends State<GameplayScreen>
             onTap: () {
               _flameGame.restart();
               setState(() {
-                _moves    = 0;
+                _moves = 0;
                 _progress = 0.0;
               });
               _startTimer();
@@ -548,9 +631,9 @@ class _GameplayScreenState extends State<GameplayScreen>
               const SizedBox(height: 16),
 
               Text(
-                'GAME PAUSED',
+                'PAUSED',
                 style: GoogleFonts.orbitron(
-                  fontSize: 20,
+                  fontSize: 22,
                   fontWeight: FontWeight.w900,
                   color: Colors.white,
                   letterSpacing: 2,
@@ -558,122 +641,72 @@ class _GameplayScreenState extends State<GameplayScreen>
               ),
               const SizedBox(height: 6),
               Text(
-                'LEVEL ${state.currentLevel} • PUZZLE $_currentPuzzleIndex / 2',
+                'LEVEL ${state.currentLevel} • PUZZLE $_currentPuzzleIndex / $_totalPuzzles',
                 style: GoogleFonts.orbitron(
                   fontSize: 11,
-                  fontWeight: FontWeight.bold,
                   color: puzzleColor,
                   letterSpacing: 1.2,
                 ),
               ),
+
+              const SizedBox(height: 24),
+
+              // Stats Row
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.04),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _StatCol(label: 'TIME', val: _formattedTime),
+                    _StatCol(label: 'MOVES', val: '$_moves'),
+                    _StatCol(label: 'MISTAKES', val: '$_totalMistakes'),
+                  ],
+                ),
+              ),
+
               const SizedBox(height: 24),
 
               // Resume Button
-              SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: ElevatedButton(
-                  onPressed: _togglePause,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: puzzleColor,
-                    foregroundColor: Colors.black,
-                    elevation: 8,
-                    shadowColor: puzzleColor.withValues(alpha: 0.6),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.play_arrow_rounded, size: 22, color: Colors.black),
-                      const SizedBox(width: 8),
-                      Text(
-                        'RESUME',
-                        style: GoogleFonts.orbitron(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 1.5,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+              _ModalBtn(
+                label: 'RESUME',
+                color: puzzleColor,
+                textColor: Colors.black,
+                onTap: _togglePause,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
 
-              // Restart Level Button
-              SizedBox(
-                width: double.infinity,
-                height: 44,
-                child: OutlinedButton(
-                  onPressed: () {
-                    _togglePause();
-                    _flameGame.restart();
-                    setState(() {
-                      _moves = 0;
-                      _progress = 0.0;
-                    });
-                    _startTimer();
-                  },
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    side: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.refresh_rounded, size: 18, color: Colors.white70),
-                      const SizedBox(width: 8),
-                      Text(
-                        'RESTART PUZZLE',
-                        style: GoogleFonts.orbitron(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.2,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+              // Restart Puzzle
+              _ModalBtn(
+                label: 'RESTART PUZZLE',
+                color: Colors.white.withValues(alpha: 0.08),
+                textColor: Colors.white,
+                onTap: () {
+                  _togglePause();
+                  _flameGame.restart();
+                  setState(() {
+                    _moves = 0;
+                    _progress = 0.0;
+                  });
+                  _startTimer();
+                },
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
 
-              // Quit to Menu Button
-              SizedBox(
-                width: double.infinity,
-                height: 44,
-                child: OutlinedButton(
-                  onPressed: () {
-                    _stopTimer();
-                    widget.onBack();
-                  },
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFFFF4060),
-                    side: BorderSide(color: const Color(0xFFFF4060).withValues(alpha: 0.4)),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.home_rounded, size: 18, color: Color(0xFFFF4060)),
-                      const SizedBox(width: 8),
-                      Text(
-                        'EXIT TO MENU',
-                        style: GoogleFonts.orbitron(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.2,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+              // Exit to Map
+              _ModalBtn(
+                label: 'QUIT TO MAP',
+                color: Colors.transparent,
+                textColor: AppTheme.textMuted,
+                border: true,
+                onTap: () {
+                  _stopTimer();
+                  widget.onBack();
+                },
               ),
             ],
           ),
@@ -683,10 +716,11 @@ class _GameplayScreenState extends State<GameplayScreen>
   }
 }
 
-// ── HUD icon button ───────────────────────────────────────────────────────────
+// ── Supporting Widget Components ────────────────────────────────────────────
 class _HudIconBtn extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
+
   const _HudIconBtn({required this.icon, required this.onTap});
 
   @override
@@ -694,26 +728,25 @@ class _HudIconBtn extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 36,
-        height: 36,
+        width: 38,
+        height: 38,
         decoration: BoxDecoration(
           color: Colors.white.withValues(alpha: 0.06),
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
         ),
-        child: Icon(icon, color: Colors.white, size: 20),
+        child: Icon(icon, size: 20, color: Colors.white),
       ),
     );
   }
 }
 
-// ── Control button ────────────────────────────────────────────────────────────
-class _ControlBtn extends StatefulWidget {
+class _ControlBtn extends StatelessWidget {
   final IconData icon;
-  final Color?   iconColor;
-  final String   label;
-  final String?  badge;
-  final Color?   badgeColor;
+  final Color? iconColor;
+  final String label;
+  final String? badge;
+  final Color? badgeColor;
   final VoidCallback onTap;
 
   const _ControlBtn({
@@ -726,92 +759,126 @@ class _ControlBtn extends StatefulWidget {
   });
 
   @override
-  State<_ControlBtn> createState() => _ControlBtnState();
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0E122B),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.4),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 22, color: iconColor ?? Colors.white),
+                const SizedBox(height: 4),
+                Text(
+                  label,
+                  style: GoogleFonts.orbitron(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+              ],
+            ),
+            if (badge != null)
+              Positioned(
+                top: 0,
+                right: 12,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                  decoration: BoxDecoration(
+                    color: (badgeColor ?? AppTheme.primaryGlow).withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                        color: (badgeColor ?? AppTheme.primaryGlow).withValues(alpha: 0.5),
+                        width: 0.8),
+                  ),
+                  child: Text(
+                    badge!,
+                    style: GoogleFonts.orbitron(
+                      fontSize: 8,
+                      fontWeight: FontWeight.bold,
+                      color: badgeColor ?? AppTheme.primaryGlow,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
-class _ControlBtnState extends State<_ControlBtn>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _ctrl;
-  late Animation<double>   _scale;
+class _StatCol extends StatelessWidget {
+  final String label;
+  final String val;
+
+  const _StatCol({required this.label, required this.val});
 
   @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 80),
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(label, style: GoogleFonts.orbitron(fontSize: 9, color: AppTheme.textMuted)),
+        const SizedBox(height: 2),
+        Text(val, style: GoogleFonts.orbitron(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
+      ],
     );
-    _scale = Tween(begin: 1.0, end: 0.92).animate(
-        CurvedAnimation(parent: _ctrl, curve: Curves.easeOut));
   }
+}
 
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
+class _ModalBtn extends StatelessWidget {
+  final String label;
+  final Color color;
+  final Color textColor;
+  final bool border;
+  final VoidCallback onTap;
+
+  const _ModalBtn({
+    required this.label,
+    required this.color,
+    required this.textColor,
+    this.border = false,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTapDown:   (_) => _ctrl.forward(),
-      onTapUp:     (_) { _ctrl.reverse(); widget.onTap(); },
-      onTapCancel: ()  => _ctrl.reverse(),
-      child: ScaleTransition(
-        scale: _scale,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 13),
-          decoration: BoxDecoration(
-            color: const Color(0xFF0E122B),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.25),
-                blurRadius: 6,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          child: Stack(
-            alignment: Alignment.center,
-            clipBehavior: Clip.none,
-            children: [
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(widget.icon,
-                      size: 22, color: widget.iconColor ?? Colors.white),
-                  const SizedBox(height: 4),
-                  Text(
-                    widget.label,
-                    style: GoogleFonts.orbitron(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white),
-                  ),
-                ],
-              ),
-              if (widget.badge != null)
-                Positioned(
-                  top: -8,
-                  right: 6,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: widget.badgeColor ?? AppTheme.accentGold,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      widget.badge!,
-                      style: GoogleFonts.orbitron(
-                          fontSize: 9,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black),
-                    ),
-                  ),
-                ),
-            ],
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 13),
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(14),
+          border: border ? Border.all(color: Colors.white.withValues(alpha: 0.15)) : null,
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: GoogleFonts.orbitron(
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+              color: textColor,
+              letterSpacing: 1.5,
+            ),
           ),
         ),
       ),
