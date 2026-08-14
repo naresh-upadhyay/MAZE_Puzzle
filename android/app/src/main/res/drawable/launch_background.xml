@@ -4,9 +4,12 @@
     <item android:drawable="@drawable/ic_graph_grid_bg" />
 
     <!-- Centered App Logo -->
-    <item>
+    <item
+        android:width="128dp"
+        android:height="128dp"
+        android:gravity="center">
         <bitmap
             android:gravity="center"
-            android:src="@mipmap/ic_launcher" />
+            android:src="@drawable/ic_splash_logo" />
     </item>
 </layer-list>
