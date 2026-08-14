@@ -37,16 +37,12 @@ class _SplashScreenState extends State<SplashScreen>
   late Animation<double> _topBarEntrance;
   late Animation<double> _logoEntrance;
   late Animation<double> _titleEntrance;
-  late Animation<double> _buttonEntrance;
   late Animation<double> _footerEntrance;
 
   // Continuous ambient loop controllers
   late AnimationController _loopController;
   late AnimationController _shimmerController;
   late AnimationController _shockwaveController;
-
-  // Button interaction state
-  bool _isButtonPressed = false;
 
   @override
   void initState() {
@@ -71,11 +67,6 @@ class _SplashScreenState extends State<SplashScreen>
     _titleEntrance = CurvedAnimation(
       parent: _entranceController,
       curve: const Interval(0.35, 0.75, curve: Curves.easeOutBack),
-    );
-
-    _buttonEntrance = CurvedAnimation(
-      parent: _entranceController,
-      curve: const Interval(0.55, 0.90, curve: Curves.easeOutCubic),
     );
 
     _footerEntrance = CurvedAnimation(
@@ -114,7 +105,6 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   void _handleStartGame() {
-    setState(() => _isButtonPressed = true);
     widget.onStart();
   }
 
@@ -182,20 +172,8 @@ class _SplashScreenState extends State<SplashScreen>
                           ),
                           const SizedBox(height: 32),
 
-                          // Radiant "TAP TO START" CTA Button
-                          AnimatedBuilder(
-                            animation: _buttonEntrance,
-                            builder: (context, child) {
-                              return Transform.scale(
-                                scale: _buttonEntrance.value,
-                                child: Opacity(
-                                  opacity: _buttonEntrance.value.clamp(0.0, 1.0),
-                                  child: child,
-                                ),
-                              );
-                            },
-                            child: _buildTapToStartButton(),
-                          ),
+                          // Static "TAP TO START" CTA Button
+                          _buildTapToStartButton(),
                         ],
                       ),
                     ),
@@ -581,59 +559,55 @@ class _SplashScreenState extends State<SplashScreen>
   Widget _buildTapToStartButton() {
     return GestureDetector(
       onTap: _handleStartGame,
-      child: AnimatedScale(
-        scale: _isButtonPressed ? 0.96 : 1.0,
-        duration: const Duration(milliseconds: 100),
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 290),
-          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [
-                Color(0xFF00FF9D),
-                Color(0xFF00E5FF),
-                Color(0xFF00C8FF),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 290),
+        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [
+              Color(0xFF00FF9D),
+              Color(0xFF00E5FF),
+              Color(0xFF00C8FF),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(50),
+          boxShadow: [
+            BoxShadow(
+              color: AppTheme.primaryGlow.withValues(alpha: 0.60),
+              blurRadius: 20,
+              spreadRadius: 1,
             ),
-            borderRadius: BorderRadius.circular(50),
-            boxShadow: [
-              BoxShadow(
-                color: AppTheme.primaryGlow.withValues(alpha: 0.60),
-                blurRadius: 20,
-                spreadRadius: 1,
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.5),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'TAP TO START',
+                style: GoogleFonts.orbitron(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w900,
+                  color: const Color(0xFF030712),
+                  letterSpacing: 2.5,
+                ),
               ),
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.5),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
+              const SizedBox(width: 10),
+              const Icon(
+                Icons.play_arrow_rounded,
+                size: 24,
+                color: Color(0xFF030712),
               ),
             ],
-          ),
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'TAP TO START',
-                  style: GoogleFonts.orbitron(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w900,
-                    color: const Color(0xFF030712),
-                    letterSpacing: 2.5,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                const Icon(
-                  Icons.play_arrow_rounded,
-                  size: 24,
-                  color: Color(0xFF030712),
-                ),
-              ],
-            ),
           ),
         ),
       ),
