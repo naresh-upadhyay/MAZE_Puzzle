@@ -5,63 +5,80 @@
     android:viewportWidth="360"
     android:viewportHeight="640">
 
-    <!-- Dark Base Background -->
+    <!-- Dark Deep Cyber Base Background -->
     <path
-        android:fillColor="#060713"
+        android:fillColor="#030514"
         android:pathData="M0,0h360v640h-360z" />
 
-    <!-- Grid Lines (Major Grid) -->
+    <!-- 1. Precision Mathematical Coordinate Grid -->
     <path
-        android:strokeColor="#1A00FF9D"
+        android:strokeColor="#1500FF9D"
         android:strokeWidth="1"
         android:pathData="
             M40,0v640 M80,0v640 M120,0v640 M160,0v640 M200,0v640 M240,0v640 M280,0v640 M320,0v640
-            M0,80h360 M0,160h360 M0,240h360 M0,320h360 M0,400h360 M0,480h360 M0,560h360" />
+            M0,40h360 M0,80h360 M0,120h360 M0,160h360 M0,200h360 M0,240h360 M0,280h360 M0,320h360
+            M0,360h360 M0,400h360 M0,440h360 M0,480h360 M0,520h360 M0,560h360 M0,600h360" />
 
-    <!-- X and Y Axes -->
+    <!-- Primary Axes -->
     <path
-        android:strokeColor="#3300FF9D"
+        android:strokeColor="#3000FF9D"
         android:strokeWidth="1.5"
         android:pathData="M180,0v640 M0,320h360" />
 
-    <!-- Graph Edges / Connecting Lines -->
+    <!-- 2. Aesthetic Sine Curve (Upper Region) -->
     <path
-        android:strokeColor="#2500FFFF"
+        android:strokeColor="#6000FF9D"
+        android:strokeWidth="2"
+        android:pathData="
+            M 0,220
+            C 40,160 80,280 120,220
+            C 160,160 200,280 240,220
+            C 280,160 320,280 360,220" />
+
+    <!-- Secondary Fourier Curve (Lower Region) -->
+    <path
+        android:strokeColor="#4500E5FF"
+        android:strokeWidth="1.8"
+        android:pathData="
+            M 0,480
+            C 45,450 90,510 135,480
+            C 180,450 225,510 270,480
+            C 315,450 345,500 360,480" />
+
+    <!-- 3. Lissajous Mathematical Knot Curve (Upper Right Quadrant) -->
+    <path
+        android:strokeColor="#35FF2A6D"
+        android:strokeWidth="1.5"
+        android:pathData="
+            M 210,130
+            C 270,80 340,180 280,210
+            C 220,240 210,110 320,130
+            C 350,140 330,100 270,130" />
+
+    <!-- 4. Graph Network Constellation (Connecting Nodes) -->
+    <path
+        android:strokeColor="#3000C8FF"
         android:strokeWidth="1.2"
         android:pathData="
-            M60,120 L160,200 L280,140
-            M60,120 L100,340 L180,480
-            M160,200 L260,360 L310,500
-            M280,140 L310,500" />
+            M40,100 L120,180 L240,110
+            M120,180 L180,260 L280,240
+            M40,540 L140,460 L260,560
+            M140,460 L220,510 L320,440" />
 
-    <!-- Location Point 1 (Top Left) -->
-    <path
-        android:fillColor="#00FF9D"
-        android:pathData="M60,120m-4,0a4,4 0 1,1 8,0a4,4 0 1,1 -8,0" />
-
-    <!-- Location Point 2 (Top Center) -->
-    <path
-        android:fillColor="#00FFFF"
-        android:pathData="M160,200m-5,0a5,5 0 1,1 10,0a5,5 0 1,1 -10,0" />
-
-    <!-- Location Point 3 (Top Right) -->
-    <path
-        android:fillColor="#FFC107"
-        android:pathData="M280,140m-4,0a4,4 0 1,1 8,0a4,4 0 1,1 -8,0" />
-
-    <!-- Location Point 4 (Mid Left) -->
-    <path
-        android:fillColor="#00FF9D"
-        android:pathData="M100,340m-5,0a5,5 0 1,1 10,0a5,5 0 1,1 -10,0" />
-
-    <!-- Location Point 5 (Mid Right) -->
-    <path
-        android:fillColor="#FF2A6D"
-        android:pathData="M260,360m-4,0a4,4 0 1,1 8,0a4,4 0 1,1 -8,0" />
-
-    <!-- Location Point 6 (Bottom Center) -->
-    <path
-        android:fillColor="#00FF9D"
-        android:pathData="M180,480m-5,0a5,5 0 1,1 10,0a5,5 0 1,1 -10,0" />
+    <!-- Glowing Graph Nodes -->
+    <!-- Node 1 -->
+    <path android:fillColor="#00FF9D" android:pathData="M40,100m-3.5,0a3.5,3.5 0 1,1 7,0a3.5,3.5 0 1,1 -7,0" />
+    <!-- Node 2 -->
+    <path android:fillColor="#00E5FF" android:pathData="M120,180m-4.5,0a4.5,4.5 0 1,1 9,0a4.5,4.5 0 1,1 -9,0" />
+    <!-- Node 3 -->
+    <path android:fillColor="#FFC107" android:pathData="M240,110m-3.5,0a3.5,3.5 0 1,1 7,0a3.5,3.5 0 1,1 -7,0" />
+    <!-- Node 4 -->
+    <path android:fillColor="#FF2A6D" android:pathData="M180,260m-4,0a4,4 0 1,1 8,0a4,4 0 1,1 -8,0" />
+    <!-- Node 5 -->
+    <path android:fillColor="#00E5FF" android:pathData="M280,240m-3.5,0a3.5,3.5 0 1,1 7,0a3.5,3.5 0 1,1 -7,0" />
+    <!-- Node 6 -->
+    <path android:fillColor="#00FF9D" android:pathData="M140,460m-4,0a4,4 0 1,1 8,0a4,4 0 1,1 -8,0" />
+    <!-- Node 7 -->
+    <path android:fillColor="#FF2A6D" android:pathData="M220,510m-3.5,0a3.5,3.5 0 1,1 7,0a3.5,3.5 0 1,1 -7,0" />
 
 </vector>
