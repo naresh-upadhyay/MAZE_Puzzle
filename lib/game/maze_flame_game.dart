@@ -81,7 +81,6 @@ class MazeFlameGame extends FlameGame with PanDetector, TapCallbacks {
   final List<_GlowParticle> _particles = [];
   final List<_GlowParticle> _winParticles = [];
   final math.Random _rng = math.Random();
-  double _particleTimer = 0;
 
   // ── Wall path cache ────────────────────────────────────────────────────────
   Path? _cachedBodyPath;
@@ -260,14 +259,7 @@ class MazeFlameGame extends FlameGame with PanDetector, TapCallbacks {
       }
     }
 
-    // Rich Particle Emissions
-    if (_headPos != null && !isCompleted && currentTouchPos != null) {
-      _particleTimer += dt;
-      if (_particleTimer >= 0.025) {
-        _particleTimer = 0;
-        _emitParticles(_headPos!, 3);
-      }
-    }
+    // Particles update
     _particles.retainWhere((p) => p.update(dt));
 
     // Win animation: Shortest path energy sweep wave
@@ -1016,7 +1008,6 @@ class MazeFlameGame extends FlameGame with PanDetector, TapCallbacks {
     if (_collisionTimer <= 0) {
       _collisionTimer = 0.35;
       HapticFeedback.heavyImpact();
-      _emitParticles(_headPos ?? currCenter, 4);
     }
   }
 
