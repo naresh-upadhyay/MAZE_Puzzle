@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="280dp"
+    android:height="280dp"
+    android:viewportWidth="360"
+    android:viewportHeight="360">
+
+    <!-- Deep Space Base Background -->
+    <path
+        android:fillColor="#030514"
+        android:pathData="M0,0h360v360h-360z" />
+
+    <!-- 1. Moving Math Graph Sine Waves Group -->
+    <group android:name="wave_group">
+        <!-- Repeating Sine Wave Curve 1 -->
+        <path
+            android:strokeColor="#7000FF9D"
+            android:strokeWidth="2.5"
+            android:pathData="
+                M -120,180
+                C -80,120 -40,240 0,180
+                C 40,120 80,240 120,180
+                C 160,120 200,240 240,180
+                C 280,120 320,240 360,180
+                C 400,120 440,240 480,180" />
+
+        <!-- Secondary Wave Curve 2 -->
+        <path
+            android:strokeColor="#5000E5FF"
+            android:strokeWidth="1.8"
+            android:pathData="
+                M -120,180
+                C -90,220 -60,140 0,180
+                C 60,220 120,140 180,180
+                C 240,220 300,140 360,180
+                C 420,220 480,140 540,180" />
+    </group>
+
+    <!-- 2. Rotating Mathematical Coordinate Rings Group -->
+    <group
+        android:name="ring_group"
+        android:pivotX="180"
+        android:pivotY="180">
+        <!-- Concentric Ring 1 -->
+        <path
+            android:strokeColor="#4500FF9D"
+            android:strokeWidth="1.5"
+            android:pathData="M180,180 m-120,0 a120,120 0 1,0 240,0 a120,120 0 1,0 -240,0" />
+
+        <!-- Concentric Ring 2 -->
+        <path
+            android:strokeColor="#3000E5FF"
+            android:strokeWidth="1.2"
+            android:pathData="M180,180 m-95,0 a95,95 0 1,0 190,0 a95,95 0 1,0 -190,0" />
+
+        <!-- Radial Angle Ticks -->
+        <path
+            android:strokeColor="#6000FF9D"
+            android:strokeWidth="2"
+            android:pathData="
+                M180,55 v15 M180,290 v15
+                M55,180 h15 M290,180 h15
+                M92,92 L103,103 M257,257 L268,268
+                M92,268 L103,257 M257,103 L268,92" />
+    </group>
+
+    <!-- 3. Master Logo Outer Glow & Rounded Frame -->
+    <path
+        android:fillColor="#1500FF9D"
+        android:pathData="M180,180 m-70,0 a70,70 0 1,0 140,0 a70,70 0 1,0 -140,0" />
+
+    <!-- Center Logo Outline Boundary -->
+    <path
+        android:strokeColor="#00FF9D"
+        android:strokeWidth="3"
+        android:fillColor="#07091B"
+        android:pathData="M130,120h100a10,10 0 0,1 10,10v100a10,10 0 0,1 -10,10h-100a10,10 0 0,1 -10,-10v-100a10,10 0 0,1 10,-10z" />
+
+    <!-- Neon Maze Path Graphics inside Emblem -->
+    <path
+        android:strokeColor="#00FF9D"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M145,215 L145,190 L175,190 L175,160 L205,160 L205,135 L215,135" />
+
+    <path
+        android:strokeColor="#00E5FF"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:pathData="M140,150h30v25 M180,225v-30h30" />
+
+</vector>

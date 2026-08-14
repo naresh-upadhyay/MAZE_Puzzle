@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animated-vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/ic_animated_splash_vector">
+
+    <!-- Bind ring_rotate animator to ring_group -->
+    <target
+        android:name="ring_group"
+        android:animation="@animator/ring_rotate" />
+
+    <!-- Bind wave_shift animator to wave_group -->
+    <target
+        android:name="wave_group"
+        android:animation="@animator/wave_shift" />
+
+</animated-vector>

@@ -8,7 +8,6 @@ import 'screens/how_to_play_screen.dart';
 import 'screens/leaderboard_screen.dart';
 import 'screens/level_complete_overlay.dart';
 import 'screens/level_select_screen.dart';
-import 'screens/preloader_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/splash_screen.dart';
 import 'screens/stats_screen.dart';
@@ -39,7 +38,7 @@ class MazeGlowApp extends StatefulWidget {
 }
 
 class _MazeGlowAppState extends State<MazeGlowApp> {
-  String _currentRoute = '/preloader';
+  String _currentRoute = '/splash';
 
   int _winStars = 3;
   String _winTime = '00:24';
@@ -80,10 +79,6 @@ class _MazeGlowAppState extends State<MazeGlowApp> {
 
   Widget _buildActiveScreen() {
     switch (_currentRoute) {
-      case '/preloader':
-        return PreloaderScreen(
-          onComplete: () => _navigateTo('/splash'),
-        );
       case '/splash':
         return SplashScreen(
           onStart: () => _navigateTo('/home'),
