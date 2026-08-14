@@ -381,10 +381,10 @@ class MazeFlameGame extends FlameGame with PanDetector, TapCallbacks {
     }
   }
 
-  // ── ENTRY GATE (Bottom Boundary Opening) ──────────────────────────────────
+  // ── ENTRY GATE (Outside Bottom Boundary) ──────────────────────────────────
   void _drawStartNode(Canvas canvas, double cw, double ch) {
     final pulse = (math.sin(_pulsePhase) + 1) / 2;
-    final center = _cellCenter(generator.startPos, cw, ch);
+    final center = Offset((generator.startPos.c + 0.5) * cw, size.y + ch * 0.45);
     final r = (cw * 0.28).clamp(4.0, 14.0);
 
     // Draw glowing Entry Gate Pillars on bottom boundary wall opening
@@ -396,9 +396,9 @@ class MazeFlameGame extends FlameGame with PanDetector, TapCallbacks {
       ..color = const Color(0xFF00FF9D).withValues(alpha: 0.85 + pulse * 0.15)
       ..strokeWidth = 3.0;
     // Left pillar bracket
-    canvas.drawLine(Offset(gateX1, gateY - 12), Offset(gateX1, gateY + 4), _sharedStroke);
+    canvas.drawLine(Offset(gateX1, gateY - 8), Offset(gateX1, gateY + 14), _sharedStroke);
     // Right pillar bracket
-    canvas.drawLine(Offset(gateX2, gateY - 12), Offset(gateX2, gateY + 4), _sharedStroke);
+    canvas.drawLine(Offset(gateX2, gateY - 8), Offset(gateX2, gateY + 14), _sharedStroke);
 
     // Entry Threshold Glow Line
     _sharedStroke
@@ -422,17 +422,17 @@ class MazeFlameGame extends FlameGame with PanDetector, TapCallbacks {
 
     _drawLabel(
       canvas,
-      center - Offset(0, r + 8),
+      center + Offset(0, r + 9),
       'ENTRY GATE',
       const Color(0xFF00FF9D),
       6.5 + cw * 0.03,
     );
   }
 
-  // ── EXIT GATE (Top Boundary Opening) ──────────────────────────────────────
+  // ── EXIT GATE (Outside Top Boundary) ──────────────────────────────────────
   void _drawExitNode(Canvas canvas, double cw, double ch, int cols, int rows) {
     final pulse = (math.sin(_pulsePhase + math.pi) + 1) / 2;
-    final center = _cellCenter(generator.exitPos, cw, ch);
+    final center = Offset((generator.exitPos.c + 0.5) * cw, -ch * 0.45);
     final r = (cw * 0.30).clamp(5.0, 16.0);
 
     double boost = 0.0;
@@ -453,9 +453,9 @@ class MazeFlameGame extends FlameGame with PanDetector, TapCallbacks {
       ..color = const Color(0xFFFF2A6D).withValues(alpha: 0.85 + pulse * 0.15)
       ..strokeWidth = 3.0;
     // Left pillar bracket
-    canvas.drawLine(Offset(gateX1, gateY - 4), Offset(gateX1, gateY + 12), _sharedStroke);
+    canvas.drawLine(Offset(gateX1, gateY - 14), Offset(gateX1, gateY + 8), _sharedStroke);
     // Right pillar bracket
-    canvas.drawLine(Offset(gateX2, gateY - 4), Offset(gateX2, gateY + 12), _sharedStroke);
+    canvas.drawLine(Offset(gateX2, gateY - 14), Offset(gateX2, gateY + 8), _sharedStroke);
 
     // Exit Threshold Glow Line
     _sharedStroke
@@ -485,7 +485,7 @@ class MazeFlameGame extends FlameGame with PanDetector, TapCallbacks {
 
     _drawLabel(
       canvas,
-      center + Offset(0, r + 9),
+      center - Offset(0, r + 9),
       'EXIT GATE',
       const Color(0xFFFF2A6D),
       6.5 + cw * 0.03,
@@ -496,17 +496,22 @@ class MazeFlameGame extends FlameGame with PanDetector, TapCallbacks {
   void _drawTrail(Canvas canvas, double cw, double ch) {
     final trailPath = Path();
 
+    final entryCenter = Offset((generator.startPos.c + 0.5) * cw, size.y + ch * 0.45);
+    final exitCenter = Offset((generator.exitPos.c + 0.5) * cw, -ch * 0.45);
+
+    // 1. Originate laser trail from outside Entry Gate
+    trailPath.moveTo(entryCenter.dx, entryCenter.dy);
+
+    // 2. Draw user path through maze cells
     for (int i = 0; i < userPath.length; i++) {
       final c = _cellCenter(userPath[i], cw, ch);
-      if (i == 0) {
-        trailPath.moveTo(c.dx, c.dy);
-      } else {
-        trailPath.lineTo(c.dx, c.dy);
-      }
+      trailPath.lineTo(c.dx, c.dy);
     }
 
-    // Connect smoothly to the current continuous head position
-    if (_headPos != null) {
+    // 3. Connect smoothly to head position or outside Exit Gate
+    if (isCompleted || (userPath.isNotEmpty && userPath.last == generator.exitPos)) {
+      trailPath.lineTo(exitCenter.dx, exitCenter.dy);
+    } else if (_headPos != null) {
       trailPath.lineTo(_headPos!.dx, _headPos!.dy);
     }
 
@@ -827,17 +832,19 @@ class MazeFlameGame extends FlameGame with PanDetector, TapCallbacks {
             HapticFeedback.selectionClick();
             _checkWin(next);
           }
-        } else if (dy < 0 && canUp) {
+        } else if (dy < 0 && (canUp || curr == generator.exitPos)) {
           final maxAdvance = ch;
           final advance = (-dy).clamp(0.0, maxAdvance);
           _headPos = Offset(currCenter.dx, currCenter.dy - advance);
-          if (advance >= ch * 0.65) {
-            final next = CellPosition(curr.r - 1, curr.c);
-            userPath.add(next);
+          if (curr == generator.exitPos || advance >= ch * 0.65) {
+            if (curr != generator.exitPos) {
+              final next = CellPosition(curr.r - 1, curr.c);
+              userPath.add(next);
+            }
             changed = true;
             advanced = true;
             HapticFeedback.selectionClick();
-            _checkWin(next);
+            _checkWin(generator.exitPos);
           }
         } else if (absDx > 6.0) {
           // Secondary fallback to horizontal if vertical is blocked by wall
