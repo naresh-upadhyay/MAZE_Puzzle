@@ -26,6 +26,7 @@ class _GameplayScreenState extends State<GameplayScreen>
   // ── Dual-puzzle state ──────────────────────────────────────────────────────
   int  _currentPuzzleIndex = 1;
   bool _showPhaseOverlay   = false;
+  bool _isPaused           = false;
 
   // ── Timer & stats ──────────────────────────────────────────────────────────
   int    _moves         = 0;
@@ -58,6 +59,7 @@ class _GameplayScreenState extends State<GameplayScreen>
     _currentPuzzleIndex = 1;
     _totalMistakes = 0;
     _progress = 0.0;
+    _isPaused = false;
     _loadPuzzle(1);
     _startTimer();
   }
@@ -104,7 +106,7 @@ class _GameplayScreenState extends State<GameplayScreen>
     if (!mounted) return;
     setState(() => _showWrongTurn = true);
     _wrongTurnTimer?.cancel();
-    _wrongTurnTimer = Timer(const Duration(milliseconds: 900), () {
+    _wrongTurnTimer = Timer(const Duration(milliseconds: 1100), () {
       if (mounted) setState(() => _showWrongTurn = false);
     });
   }
@@ -156,16 +158,26 @@ class _GameplayScreenState extends State<GameplayScreen>
   }
 
   // ── Timer ─────────────────────────────────────────────────────────────────
-  void _startTimer() {
+  void _startTimer({bool resume = false}) {
     _stopTimer();
-    _seconds  = 0;
-    _hintUsed = false;
+    if (!resume) {
+      _seconds = 0;
+      _hintUsed = false;
+    }
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      setState(() => _seconds++);
+      if (!_isPaused && !_showPhaseOverlay) {
+        setState(() => _seconds++);
+      }
     });
   }
 
   void _stopTimer() => _timer?.cancel();
+
+  void _togglePause() {
+    setState(() {
+      _isPaused = !_isPaused;
+    });
+  }
 
   @override
   void dispose() {
@@ -190,26 +202,33 @@ class _GameplayScreenState extends State<GameplayScreen>
     return Scaffold(
       backgroundColor: AppTheme.bgDark,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          child: Column(
-            children: [
-              // ── HUD Row ────────────────────────────────────────────────────
-              _buildHUD(state, puzzleColor),
-              const SizedBox(height: 6),
+        child: Stack(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Column(
+                children: [
+                  // ── HUD Row ────────────────────────────────────────────────────
+                  _buildHUD(state, puzzleColor),
+                  const SizedBox(height: 6),
 
-              // ── PATH PROGRESS bar ──────────────────────────────────────────
-              _buildProgressBar(puzzleColor),
-              const SizedBox(height: 8),
+                  // ── PATH PROGRESS bar ──────────────────────────────────────────
+                  _buildProgressBar(puzzleColor),
+                  const SizedBox(height: 8),
 
-              // ── Maze Canvas ────────────────────────────────────────────────
-              Expanded(child: _buildMazeArea(puzzleColor)),
-              const SizedBox(height: 10),
+                  // ── Maze Canvas ────────────────────────────────────────────────
+                  Expanded(child: _buildMazeArea(puzzleColor)),
+                  const SizedBox(height: 10),
 
-              // ── Controls ───────────────────────────────────────────────────
-              _buildControls(state),
-            ],
-          ),
+                  // ── Controls ───────────────────────────────────────────────────
+                  _buildControls(state),
+                ],
+              ),
+            ),
+
+            // ── In-Game Pause Modal ───────────────────────────────────────────
+            if (_isPaused) _buildPauseOverlay(state, puzzleColor),
+          ],
         ),
       ),
     );
@@ -220,10 +239,10 @@ class _GameplayScreenState extends State<GameplayScreen>
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        // Left — Pause
+        // Left — Pause Button
         _HudIconBtn(
           icon: Icons.pause_rounded,
-          onTap: widget.onBack,
+          onTap: _togglePause,
         ),
 
         // Center — Level + Puzzle + Stats
@@ -486,6 +505,180 @@ class _GameplayScreenState extends State<GameplayScreen>
           ),
         ),
       ],
+    );
+  }
+
+  // ── In-Game Pause Modal ───────────────────────────────────────────────────
+  Widget _buildPauseOverlay(GameState state, Color puzzleColor) {
+    return Container(
+      color: Colors.black.withValues(alpha: 0.85),
+      child: Center(
+        child: Container(
+          width: 320,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+          decoration: BoxDecoration(
+            color: const Color(0xFF0E122B),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: puzzleColor.withValues(alpha: 0.45),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: puzzleColor.withValues(alpha: 0.20),
+                blurRadius: 30,
+                spreadRadius: 2,
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Icon Header
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: puzzleColor.withValues(alpha: 0.15),
+                  border: Border.all(color: puzzleColor, width: 2),
+                ),
+                child: Icon(Icons.pause_rounded, size: 34, color: puzzleColor),
+              ),
+              const SizedBox(height: 16),
+
+              Text(
+                'GAME PAUSED',
+                style: GoogleFonts.orbitron(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.white,
+                  letterSpacing: 2,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'LEVEL ${state.currentLevel} • PUZZLE $_currentPuzzleIndex / 2',
+                style: GoogleFonts.orbitron(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: puzzleColor,
+                  letterSpacing: 1.2,
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Resume Button
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton(
+                  onPressed: _togglePause,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: puzzleColor,
+                    foregroundColor: Colors.black,
+                    elevation: 8,
+                    shadowColor: puzzleColor.withValues(alpha: 0.6),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.play_arrow_rounded, size: 22, color: Colors.black),
+                      const SizedBox(width: 8),
+                      Text(
+                        'RESUME',
+                        style: GoogleFonts.orbitron(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Restart Level Button
+              SizedBox(
+                width: double.infinity,
+                height: 44,
+                child: OutlinedButton(
+                  onPressed: () {
+                    _togglePause();
+                    _flameGame.restart();
+                    setState(() {
+                      _moves = 0;
+                      _progress = 0.0;
+                    });
+                    _startTimer();
+                  },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    side: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.refresh_rounded, size: 18, color: Colors.white70),
+                      const SizedBox(width: 8),
+                      Text(
+                        'RESTART PUZZLE',
+                        style: GoogleFonts.orbitron(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Quit to Menu Button
+              SizedBox(
+                width: double.infinity,
+                height: 44,
+                child: OutlinedButton(
+                  onPressed: () {
+                    _stopTimer();
+                    widget.onBack();
+                  },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFFFF4060),
+                    side: BorderSide(color: const Color(0xFFFF4060).withValues(alpha: 0.4)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.home_rounded, size: 18, color: Color(0xFFFF4060)),
+                      const SizedBox(width: 8),
+                      Text(
+                        'EXIT TO MENU',
+                        style: GoogleFonts.orbitron(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

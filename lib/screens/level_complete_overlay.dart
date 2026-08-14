@@ -306,27 +306,29 @@ class _LevelCompleteOverlayState extends State<LevelCompleteOverlay>
 
           // ── 3. Victory Aura Glow Beacon Behind Cards ──────────────────────
           Positioned.fill(
-            child: AnimatedBuilder(
-              animation: _pulseCtrl,
-              builder: (context, _) {
-                return Center(
-                  child: Container(
-                    width: 340,
-                    height: 340,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: RadialGradient(
-                        colors: [
-                          AppTheme.primaryGlow.withValues(
-                            alpha: 0.16 + _pulseCtrl.value * 0.10,
-                          ),
-                          Colors.transparent,
-                        ],
+            child: IgnorePointer(
+              child: AnimatedBuilder(
+                animation: _pulseCtrl,
+                builder: (context, _) {
+                  return Center(
+                    child: Container(
+                      width: 340,
+                      height: 340,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: RadialGradient(
+                          colors: [
+                            AppTheme.primaryGlow.withValues(
+                              alpha: 0.16 + _pulseCtrl.value * 0.10,
+                            ),
+                            Colors.transparent,
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                );
-              },
+                  );
+                },
+              ),
             ),
           ),
 

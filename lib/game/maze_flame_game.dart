@@ -57,7 +57,7 @@ class MazeFlameGame extends FlameGame with PanDetector, TapCallbacks {
   // ── Animation state ───────────────────────────────────────────────────────
   double _pulsePhase = 0.0;
   double _errorTimer = 0.0; // seconds remaining of red-flash error state
-  bool _warningState = false; // finger near wall
+  double _hintTimer = 0.0; // seconds remaining for animated hint guide
 
   // ── Smooth Head & Touch Tracking ───────────────────────────────────────────
   Offset? _headPos; // Continuous sub-cell position along the open corridor
@@ -201,6 +201,14 @@ class MazeFlameGame extends FlameGame with PanDetector, TapCallbacks {
     // Error flash timer
     if (_errorTimer > 0) {
       _errorTimer = (_errorTimer - dt).clamp(0.0, 1.0);
+    }
+
+    // Hint timer countdown
+    if (_hintTimer > 0) {
+      _hintTimer -= dt;
+      if (_hintTimer <= 0) {
+        hintPath = [];
+      }
     }
 
     if (size.x > 0 && size.y > 0) {
@@ -355,10 +363,22 @@ class MazeFlameGame extends FlameGame with PanDetector, TapCallbacks {
     // 6. EXIT node (animated)
     _drawExitNode(canvas, cw, ch, cols, rows);
 
-    // 7. Hint path
-    if (hintPath.isNotEmpty) {
-      _hintPaint.strokeWidth = (cw * 0.18).clamp(2.0, 6.0);
+    // 7. Hint path (Animated Golden Energy Beam Guide)
+    if (hintPath.isNotEmpty && _hintTimer > 0) {
+      final hintOpacity = (_hintTimer / 0.8).clamp(0.0, 1.0);
+      final pulse = (math.sin(_pulsePhase * 2.5) + 1) / 2;
+      _hintPaint
+        ..strokeWidth = (cw * 0.24).clamp(3.5, 9.0)
+        ..color = const Color(0xFFFFD700).withValues(alpha: (0.40 + pulse * 0.35) * hintOpacity);
       canvas.drawPath(_buildCellPath(hintPath, cw, ch), _hintPaint);
+
+      // Inner bright core
+      _sharedStroke
+        ..strokeWidth = (cw * 0.10).clamp(1.8, 4.0)
+        ..color = Colors.white.withValues(alpha: (0.85 + pulse * 0.15) * hintOpacity)
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round;
+      canvas.drawPath(_buildCellPath(hintPath, cw, ch), _sharedStroke);
     }
 
     // 8. Player glowing laser beam trail
@@ -539,40 +559,26 @@ class MazeFlameGame extends FlameGame with PanDetector, TapCallbacks {
   // ── Energy orb cursor ──────────────────────────────────────────────────────
   void _drawOrb(Canvas canvas, Offset pos) {
     final pulse = (math.sin(_pulsePhase) + 1) / 2;
-    final bloomR = 10.0 + pulse * 3.0;
-    const coreR = 4.2;
+    final r = 7.0 + pulse * 2.0;
 
-    final orbColor = _warningState
-        ? Color.lerp(themeColor, const Color(0xFFFF8C00), 0.7)!
-        : themeColor;
+    _orbGlow.color = (_errorTimer > 0.05 ? const Color(0xFFFF3030) : themeColor)
+        .withValues(alpha: 0.35 + pulse * 0.25);
+    canvas.drawCircle(pos, r * 2.2, _orbGlow);
 
-    _orbGlow.color = orbColor.withValues(alpha: 0.32 + pulse * 0.20);
-    canvas.drawCircle(pos, bloomR, _orbGlow);
-
-    _sharedStroke
-      ..color = orbColor.withValues(alpha: 0.75)
-      ..strokeWidth = 1.6;
-    canvas.drawCircle(pos, bloomR * 0.65, _sharedStroke);
-
-    _orbCore.color = Colors.white.withValues(alpha: 0.90 + pulse * 0.10);
-    canvas.drawCircle(pos, coreR, _orbCore);
+    _orbCore.color = _errorTimer > 0.05 ? const Color(0xFFFF7070) : Colors.white;
+    canvas.drawCircle(pos, r, _orbCore);
   }
 
   // ── Win wave ───────────────────────────────────────────────────────────────
   void _drawWinWave(Canvas canvas, double cw, double ch) {
-    final solution = generator.solutionPath;
-    if (solution.length < 2) return;
-
-    final waveEnd = (_winWaveProgress * (solution.length - 1)).round();
-    final lit = solution.sublist(0, waveEnd + 1);
-
-    _sharedStroke
-      ..color = Colors.white.withValues(alpha: 0.6 * _winWaveProgress)
-      ..strokeWidth = (cw * 0.20).clamp(3.0, 8.0)
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-    if (lit.length >= 2) {
-      canvas.drawPath(_buildCellPath(lit, cw, ch), _sharedStroke);
+    if (userPath.isEmpty) return;
+    final count = (userPath.length * _winWaveProgress).floor().clamp(0, userPath.length - 1);
+    for (int i = 0; i <= count; i++) {
+      final c = _cellCenter(userPath[i], cw, ch);
+      final age = (_winWaveProgress * userPath.length - i).clamp(0.0, 3.0);
+      final alpha = (1.0 - age / 3.0).clamp(0.0, 1.0);
+      _sharedFill.color = Colors.white.withValues(alpha: alpha * 0.7);
+      canvas.drawCircle(c, cw * 0.35 * (1 + (1 - alpha)), _sharedFill);
     }
   }
 
@@ -580,22 +586,22 @@ class MazeFlameGame extends FlameGame with PanDetector, TapCallbacks {
   void _emitParticles(Offset origin, int count) {
     for (int i = 0; i < count; i++) {
       final angle = _rng.nextDouble() * 2 * math.pi;
-      final speed = _rng.nextDouble() * 1.5 + 0.3;
+      final speed = _rng.nextDouble() * 25.0 + 10.0;
       _particles.add(_GlowParticle(
         position: origin,
-        radius: _rng.nextDouble() * 3.5 + 1.0,
-        opacity: 0.80 + _rng.nextDouble() * 0.20,
+        radius: _rng.nextDouble() * 3.5 + 1.5,
+        opacity: 0.85,
         vx: math.cos(angle) * speed,
         vy: math.sin(angle) * speed,
-        color: Color.lerp(themeColor, Colors.white, _rng.nextDouble() * 0.5)!,
+        color: [themeColor, Colors.white, const Color(0xFF00FF9D)][_rng.nextInt(3)],
       ));
     }
   }
 
   void _emitWinBurst(Offset origin) {
-    for (int i = 0; i < 28; i++) {
+    for (int i = 0; i < 48; i++) {
       final angle = _rng.nextDouble() * 2 * math.pi;
-      final speed = _rng.nextDouble() * 3.8 + 1.2;
+      final speed = _rng.nextDouble() * 120.0 + 40.0;
       _winParticles.add(_GlowParticle(
         position: origin,
         radius: _rng.nextDouble() * 6.0 + 2.0,
@@ -678,13 +684,11 @@ class MazeFlameGame extends FlameGame with PanDetector, TapCallbacks {
   @override
   void onPanEnd(DragEndInfo info) {
     currentTouchPos = null;
-    _warningState = false;
   }
 
   @override
   void onPanCancel() {
     currentTouchPos = null;
-    _warningState = false;
   }
 
   /// Butter-smooth corridor-constrained finger tracking
@@ -765,11 +769,9 @@ class MazeFlameGame extends FlameGame with PanDetector, TapCallbacks {
           _headPos = Offset(currCenter.dx + advance, currCenter.dy);
           if (advance >= cw * 0.65) {
             final next = CellPosition(curr.r, curr.c + 1);
-            userPath.add(next);
+            _advanceTo(next);
             changed = true;
             advanced = true;
-            HapticFeedback.selectionClick();
-            _checkWin(next);
           }
         } else if (dx < 0 && canLeft) {
           final maxAdvance = cw;
@@ -777,11 +779,9 @@ class MazeFlameGame extends FlameGame with PanDetector, TapCallbacks {
           _headPos = Offset(currCenter.dx - advance, currCenter.dy);
           if (advance >= cw * 0.65) {
             final next = CellPosition(curr.r, curr.c - 1);
-            userPath.add(next);
+            _advanceTo(next);
             changed = true;
             advanced = true;
-            HapticFeedback.selectionClick();
-            _checkWin(next);
           }
         } else if (absDy > 6.0) {
           // Secondary fallback to vertical if horizontal is blocked by wall
@@ -790,22 +790,18 @@ class MazeFlameGame extends FlameGame with PanDetector, TapCallbacks {
             _headPos = Offset(currCenter.dx, currCenter.dy + advance);
             if (advance >= ch * 0.65) {
               final next = CellPosition(curr.r + 1, curr.c);
-              userPath.add(next);
+              _advanceTo(next);
               changed = true;
               advanced = true;
-              HapticFeedback.selectionClick();
-              _checkWin(next);
             }
           } else if (dy < 0 && canUp) {
             final advance = (-dy).clamp(0.0, ch);
             _headPos = Offset(currCenter.dx, currCenter.dy - advance);
             if (advance >= ch * 0.65) {
               final next = CellPosition(curr.r - 1, curr.c);
-              userPath.add(next);
+              _advanceTo(next);
               changed = true;
               advanced = true;
-              HapticFeedback.selectionClick();
-              _checkWin(next);
             }
           } else {
             _headPos = currCenter;
@@ -821,25 +817,19 @@ class MazeFlameGame extends FlameGame with PanDetector, TapCallbacks {
           _headPos = Offset(currCenter.dx, currCenter.dy + advance);
           if (advance >= ch * 0.65) {
             final next = CellPosition(curr.r + 1, curr.c);
-            userPath.add(next);
+            _advanceTo(next);
             changed = true;
             advanced = true;
-            HapticFeedback.selectionClick();
-            _checkWin(next);
           }
-        } else if (dy < 0 && (canUp || curr == generator.exitPos)) {
+        } else if (dy < 0 && canUp) {
           final maxAdvance = ch;
           final advance = (-dy).clamp(0.0, maxAdvance);
           _headPos = Offset(currCenter.dx, currCenter.dy - advance);
-          if (curr == generator.exitPos || advance >= ch * 0.65) {
-            if (curr != generator.exitPos) {
-              final next = CellPosition(curr.r - 1, curr.c);
-              userPath.add(next);
-            }
+          if (advance >= ch * 0.65) {
+            final next = CellPosition(curr.r - 1, curr.c);
+            _advanceTo(next);
             changed = true;
             advanced = true;
-            HapticFeedback.selectionClick();
-            _checkWin(generator.exitPos);
           }
         } else if (absDx > 6.0) {
           // Secondary fallback to horizontal if vertical is blocked by wall
@@ -848,11 +838,9 @@ class MazeFlameGame extends FlameGame with PanDetector, TapCallbacks {
             _headPos = Offset(currCenter.dx + advance, currCenter.dy);
             if (advance >= cw * 0.65) {
               final next = CellPosition(curr.r, curr.c + 1);
-              userPath.add(next);
+              _advanceTo(next);
               changed = true;
               advanced = true;
-              HapticFeedback.selectionClick();
-              _checkWin(next);
             }
           } else if (dx < 0 && canLeft) {
             final advance = (-dx).clamp(0.0, cw);
@@ -879,6 +867,28 @@ class MazeFlameGame extends FlameGame with PanDetector, TapCallbacks {
     if (changed) {
       onMove(userPath.length - 1);
     }
+  }
+
+  void _advanceTo(CellPosition next) {
+    userPath.add(next);
+    HapticFeedback.selectionClick();
+
+    // Check if entered dead-end cell (only 1 open passage)
+    final cell = generator.grid[next.r][next.c];
+    int openCount = 0;
+    if (!cell.walls.top) openCount++;
+    if (!cell.walls.bottom) openCount++;
+    if (!cell.walls.left) openCount++;
+    if (!cell.walls.right) openCount++;
+
+    if (openCount == 1 && next != generator.exitPos && next != generator.startPos) {
+      mistakeCount++;
+      _errorTimer = 0.45;
+      HapticFeedback.heavyImpact();
+      onWrongPath?.call();
+    }
+
+    _checkWin(next);
   }
 
   void _checkWin(CellPosition pos) {
@@ -910,14 +920,8 @@ class MazeFlameGame extends FlameGame with PanDetector, TapCallbacks {
   // ── Public controls ───────────────────────────────────────────────────────
   void showHint() {
     hintPath = List.from(generator.solutionPath);
-    userPath = List.from(generator.solutionPath);
-    if (size.x > 0 && size.y > 0) {
-      final cw = size.x / generator.cols;
-      final ch = size.y / generator.rows;
-      _headPos = _cellCenter(userPath.last, cw, ch);
-    }
-    onMove(userPath.length - 1);
-    _triggerWin();
+    _hintTimer = 6.0; // Show animated golden guide for 6 seconds without auto-clearing
+    HapticFeedback.mediumImpact();
   }
 
   void undoStep() {
@@ -936,8 +940,8 @@ class MazeFlameGame extends FlameGame with PanDetector, TapCallbacks {
     isCompleted = false;
     currentTouchPos = null;
     _headPos = null;
-    _warningState = false;
     _errorTimer = 0;
+    _hintTimer = 0;
     _winAnimating = false;
     _winAnimTimer = 0;
     _winWaveProgress = 0;

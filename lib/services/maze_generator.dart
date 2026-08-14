@@ -83,7 +83,6 @@ class MazeGenerator {
       CellPosition curr = startPos;
       grid[curr.r][curr.c].visited = true;
 
-      final minC = (targetCol - (cols * 0.12).round()).clamp(0, cols - 1);
       final maxC = (targetCol + (cols * 0.12).round()).clamp(0, cols - 1);
 
       // Phase A: Connect START to sector column
@@ -95,33 +94,25 @@ class MazeGenerator {
         grid[curr.r][curr.c].visited = true;
       }
 
-      // Phase B: Serpentine upward ascent with 50% probability of lateral weaving
-      while (curr.r > 0) {
+      // Phase B: Serpentine multi-turn ascent weaving directly towards EXIT (0, 0)
+      while (curr != exitPos) {
         final r = curr.r;
         final c = curr.c;
 
         final candidates = <CellPosition>[];
-        // Always offer upward movement
-        candidates.add(CellPosition(r - 1, c));
+        if (r > 0) candidates.add(CellPosition(r - 1, c));
+        if (c > 0) candidates.add(CellPosition(r, c - 1));
 
-        // Offer lateral turns within sector boundaries to create serpentine loops
-        if (c > minC && rng.nextDouble() < 0.55) {
-          candidates.add(CellPosition(r, c - 1));
-        }
-        if (c < maxC && rng.nextDouble() < 0.55) {
+        // Lateral and exploratory turns within sector bounds for rich labyrinth texture
+        if (c < maxC && c < cols - 1 && rng.nextDouble() < 0.35) {
           candidates.add(CellPosition(r, c + 1));
+        }
+        if (r < rows - 1 && rng.nextDouble() < 0.20) {
+          candidates.add(CellPosition(r + 1, c));
         }
 
         final nextPos = candidates[rng.nextInt(candidates.length)];
         _removeWalls(grid[r][c], grid[nextPos.r][nextPos.c]);
-        curr = nextPos;
-        grid[curr.r][curr.c].visited = true;
-      }
-
-      // Phase C: Connect top of sector (0, curr.c) to EXIT portal (0, 0)
-      while (curr.c > exitPos.c) {
-        final nextPos = CellPosition(0, curr.c - 1);
-        _removeWalls(grid[curr.r][curr.c], grid[nextPos.r][nextPos.c]);
         curr = nextPos;
         grid[curr.r][curr.c].visited = true;
       }
