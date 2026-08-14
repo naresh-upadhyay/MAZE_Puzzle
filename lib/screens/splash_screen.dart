@@ -135,7 +135,7 @@ class _SplashScreenState extends State<SplashScreen>
                   return Transform.translate(
                     offset: Offset(0, -30 * (1.0 - _topBarEntrance.value)),
                     child: Opacity(
-                      opacity: _topBarEntrance.value,
+                      opacity: _topBarEntrance.value.clamp(0.0, 1.0),
                       child: child,
                     ),
                   );
@@ -173,7 +173,7 @@ class _SplashScreenState extends State<SplashScreen>
                               return Transform.translate(
                                 offset: Offset(0, 20 * (1.0 - _titleEntrance.value)),
                                 child: Opacity(
-                                  opacity: _titleEntrance.value,
+                                  opacity: _titleEntrance.value.clamp(0.0, 1.0),
                                   child: child,
                                 ),
                               );
@@ -189,7 +189,7 @@ class _SplashScreenState extends State<SplashScreen>
                               return Transform.scale(
                                 scale: _buttonEntrance.value,
                                 child: Opacity(
-                                  opacity: _buttonEntrance.value,
+                                  opacity: _buttonEntrance.value.clamp(0.0, 1.0),
                                   child: child,
                                 ),
                               );
@@ -210,7 +210,7 @@ class _SplashScreenState extends State<SplashScreen>
                   return Transform.translate(
                     offset: Offset(0, 30 * (1.0 - _footerEntrance.value)),
                     child: Opacity(
-                      opacity: _footerEntrance.value,
+                      opacity: _footerEntrance.value.clamp(0.0, 1.0),
                       child: child,
                     ),
                   );
