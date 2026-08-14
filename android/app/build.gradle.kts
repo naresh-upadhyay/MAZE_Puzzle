@@ -15,7 +15,7 @@ if (keystorePropertiesFile.exists()) {
 android {
     namespace = "com.maze_puzzle.maze_puzzle_path_find_game"
     compileSdk = 36
-    ndkVersion = flutter.ndkVersion
+    ndkVersion = "28.2.13676358"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -46,6 +46,14 @@ android {
             } else {
                 signingConfigs.getByName("debug")
             }
+            isMinifyEnabled = false
+            isShrinkResources = false
+        }
+    }
+
+    packaging {
+        jniLibs {
+            useLegacyPackaging = false
         }
     }
 }

@@ -31,6 +31,7 @@ class _GameplayScreenState extends State<GameplayScreen>
 
   // ── Timer & stats ──────────────────────────────────────────────────────────
   int _moves = 0;
+  int _totalMoves = 0;
   int _seconds = 0;
   Timer? _timer;
   bool _hintUsed = false;
@@ -57,6 +58,8 @@ class _GameplayScreenState extends State<GameplayScreen>
   void _initGame() {
     _currentPuzzleIndex = 1;
     _totalMistakes = 0;
+    _totalMoves = 0;
+    _moves = 0;
     _progress = 0.0;
     _isPaused = false;
     _loadPuzzle(1);
@@ -167,6 +170,7 @@ class _GameplayScreenState extends State<GameplayScreen>
       Future.delayed(const Duration(milliseconds: 1400), () {
         if (!mounted) return;
         setState(() {
+          _totalMoves += _moves;
           _currentPuzzleIndex++;
           _showPhaseOverlay = false;
           _moves = 0;
@@ -188,6 +192,7 @@ class _GameplayScreenState extends State<GameplayScreen>
         final coinsEarned = stars * 50;
         final gemsEarned = stars > 2 ? 5 : 2;
         final isPerfect = stars == 3 && !_hintUsed && _totalMistakes == 0;
+        final cumulativeMoves = _totalMoves + _moves;
 
         state.saveLevelResult(
           'simple',
@@ -199,7 +204,7 @@ class _GameplayScreenState extends State<GameplayScreen>
           gemsEarned: gemsEarned,
         );
 
-        widget.onWinPayload(stars, _formattedTime, _moves, coinsEarned, gemsEarned);
+        widget.onWinPayload(stars, _formattedTime, cumulativeMoves, coinsEarned, gemsEarned);
       });
     }
   }
@@ -324,7 +329,7 @@ class _GameplayScreenState extends State<GameplayScreen>
                   const SizedBox(width: 14),
                   const Icon(Icons.directions_walk, size: 11, color: AppTheme.textMuted),
                   const SizedBox(width: 3),
-                  Text('$_moves',
+                  Text('${_totalMoves + _moves}',
                       style: GoogleFonts.orbitron(fontSize: 10, color: AppTheme.textMuted)),
                 ],
               ),
